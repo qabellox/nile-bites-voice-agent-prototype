@@ -1,0 +1,487 @@
+# Nile Bites - illustrative development task set
+#
+# ############################################################################
+# THIS IS NOT THE RESEARCH TASK SET.
+#
+# These trials exist to develop and validate the instrument: they check that the
+# deterministic tools, order state, context resolution, logging and evaluation
+# all behave. They are NOT authored to the researcher's final methodology, they
+# are not balanced across conditions, and they must not be used as research data.
+# The real task set is a scientific artefact the researcher still has to build.
+# ############################################################################
+#
+# Format
+#   task_id            unique id
+#   family             one of the seven task families
+#   declared_condition C0..C4, the condition this trial is authored to be in
+#   business_weekday   weekday the business rules run under. Promotions and
+#                      hours depend on it, so any task asserting an exact
+#                      total must pin it.
+#   turns              utterance + reference_transcript per turn
+#   expected_*         assertions checked against the real deterministic state
+#
+# Expected money for the pinned weekday (wednesday, no weekday promotion fires):
+#   2x Classic Chicken Burger (145)      = 290
+#   1x Coca-Cola Can (25)                =  25   subtotal 315
+#   PROM-05 Family Combo (2+ of NB-BURG-001, subtotal >= 300) = -40
+#   275 after discount < 300 free-delivery threshold -> Z1 fee 15
+#   total = 315 - 40 + 15 = 290
+
+meta:
+  dataset_name: "Nile Bites development tasks"
+  is_research_data: false
+  purpose: instrument validation only
+  disclaimer: >-
+    Illustrative trials for building and testing the research instrument. Not a
+    balanced experimental design. No results may be reported from these.
+
+tasks:
+
+  # =========================================================================
+  # MATCHED SET - the same task meaning across all five conditions.
+  # Demonstrates the matched-task principle. The wording changes, the meaning
+  # does not: two chicken burgers without cheese, one Coke, delivered to Zamalek.
+  # =========================================================================
+  - task_id: "DEV-MC-C0"
+    family: "order_creation"
+    declared_condition: "C0"
+    business_weekday: "wednesday"
+    turns:
+      - utterance: "عايز اتنين تشيكن برجر من غير جبنة وكوكا كولا واحد، توصل الزمالك"
+        reference_transcript: "عايز اتنين تشيكن برجر من غير جبنة وكوكا كولا واحد، توصل الزمالك"
+    expected_lines:
+      - { item_id: "NB-BURG-001", quantity: 2, options: ["no_cheese"] }
+      - { item_id: "NB-DRNK-001", quantity: 1, options: [] }
+    expected_subtotal: 315
+    expected_delivery_fee: 15
+    expected_total: 290
+    expected_zone_id: "Z1"
+    expected_tools: ["create_order"]
+    tags: ["matched_set", "order_creation"]
+
+  - task_id: "DEV-MC-C1"
+    family: "order_creation"
+    declared_condition: "C1"
+    business_weekday: "wednesday"
+    turns:
+      - utterance: "عايز اتنين تشيكن برجر من غير cheese وكوكا كولا واحد، توصل الزمالك"
+        reference_transcript: "عايز اتنين تشيكن برجر من غير cheese وكوكا كولا واحد، توصل الزمالك"
+    expected_lines:
+      - { item_id: "NB-BURG-001", quantity: 2, options: ["no_cheese"] }
+      - { item_id: "NB-DRNK-001", quantity: 1, options: [] }
+    expected_subtotal: 315
+    expected_delivery_fee: 15
+    expected_total: 290
+    expected_zone_id: "Z1"
+    expected_tools: ["create_order"]
+    tags: ["matched_set", "order_creation"]
+
+  - task_id: "DEV-MC-C2"
+    family: "order_creation"
+    declared_condition: "C2"
+    business_weekday: "wednesday"
+    turns:
+      - utterance: "عايز two chicken burgers من غير cheese، و one Coke، توصل الزمالك"
+        reference_transcript: "عايز two chicken burgers من غير cheese، و one Coke، توصل الزمالك"
+    expected_lines:
+      - { item_id: "NB-BURG-001", quantity: 2, options: ["no_cheese"] }
+      - { item_id: "NB-DRNK-001", quantity: 1, options: [] }
+    expected_subtotal: 315
+    expected_delivery_fee: 15
+    expected_total: 290
+    expected_zone_id: "Z1"
+    expected_tools: ["create_order"]
+    tags: ["matched_set", "order_creation"]
+
+  - task_id: "DEV-MC-C3"
+    family: "order_creation"
+    declared_condition: "C3"
+    business_weekday: "wednesday"
+    turns:
+      - utterance: "I want two chicken burgers من غير cheese and one Coke، توصل الزمالك"
+        reference_transcript: "I want two chicken burgers من غير cheese and one Coke، توصل الزمالك"
+    expected_lines:
+      - { item_id: "NB-BURG-001", quantity: 2, options: ["no_cheese"] }
+      - { item_id: "NB-DRNK-001", quantity: 1, options: [] }
+    expected_subtotal: 315
+    expected_delivery_fee: 15
+    expected_total: 290
+    expected_zone_id: "Z1"
+    expected_tools: ["create_order"]
+    tags: ["matched_set", "order_creation"]
+
+  - task_id: "DEV-MC-C4"
+    family: "order_creation"
+    declared_condition: "C4"
+    business_weekday: "wednesday"
+    turns:
+      - utterance: "I want two chicken burgers without cheese and one Coke, please deliver to Zamalek"
+        reference_transcript: "I want two chicken burgers without cheese and one Coke, please deliver to Zamalek"
+    expected_lines:
+      - { item_id: "NB-BURG-001", quantity: 2, options: ["no_cheese"] }
+      - { item_id: "NB-DRNK-001", quantity: 1, options: [] }
+    expected_subtotal: 315
+    expected_delivery_fee: 15
+    expected_total: 290
+    expected_zone_id: "Z1"
+    expected_tools: ["create_order"]
+    tags: ["matched_set", "order_creation"]
+
+  # =========================================================================
+  # 1. INFORMATION
+  # =========================================================================
+  - task_id: "DEV-INFO-01"
+    family: "information"
+    declared_condition: "C0"
+    business_weekday: "wednesday"
+    turns:
+      - utterance: "بتعملوا إيه في الـ tacos؟"
+        reference_transcript: "بتعملوا إيه في الـ tacos؟"
+    expected_tools: ["search_menu"]
+    expect_no_order: true
+    notes: "Query for a category that does not exist. Tacos are not on this menu."
+
+  - task_id: "DEV-INFO-02"
+    family: "information"
+    declared_condition: "C0"
+    business_weekday: "wednesday"
+    turns:
+      - utterance: "عندكم كشري ولا لأ؟"
+        reference_transcript: "عندكم كشري ولا لأ؟"
+    expected_tools: ["search_menu", "get_menu_item"]
+    expected_facts:
+      - { type: "number", value: "85" }
+    expect_no_order: true
+    notes: "Is koshari on the menu, and what does it cost?"
+
+  - task_id: "DEV-INFO-03"
+    family: "information"
+    declared_condition: "C2"
+    business_weekday: "wednesday"
+    turns:
+      - utterance: "Do you have koshari، وإيه ingredients بتاعة it؟"
+        reference_transcript: "Do you have koshari، وإيه ingredients بتاعة it؟"
+    expected_tools: ["get_menu_item"]
+    expect_no_order: true
+    notes: "English-dominant question with an Egyptian Arabic tail."
+
+  # =========================================================================
+  # 2. PRICE & AVAILABILITY
+  # =========================================================================
+  - task_id: "DEV-PRICE-01"
+    family: "price_availability"
+    declared_condition: "C0"
+    business_weekday: "wednesday"
+    turns:
+      - utterance: "السمك المشوي بكام؟"
+        reference_transcript: "السمك المشوي بكام؟"
+    expected_tools: ["search_menu", "get_price", "check_availability"]
+    expected_facts:
+      - { type: "number", value: "210" }
+    expect_no_order: true
+    notes: "Grilled Tilapia: priced at 210 but UNAVAILABLE. Tests the availability branch."
+
+  - task_id: "DEV-PRICE-02"
+    family: "price_availability"
+    declared_condition: "C1"
+    business_weekday: "wednesday"
+    turns:
+      - utterance: "البطاطس بكام وهي available؟"
+        reference_transcript: "البطاطس بكام وهي available؟"
+    expected_tools: ["get_price", "check_availability"]
+    expected_facts:
+      - { type: "number", value: "55" }
+    expect_no_order: true
+    notes: "French fries: 55 EGP, available."
+
+  - task_id: "DEV-PRICE-03"
+    family: "price_availability"
+    declared_condition: "C4"
+    business_weekday: "wednesday"
+    turns:
+      - utterance: "How much is the falafel wrap, and can I get it right now please?"
+        reference_transcript: "How much is the falafel wrap, and can I get it right now please?"
+    expected_tools: ["get_price", "check_availability"]
+    expected_facts:
+      - { type: "number", value: "70" }
+    expect_no_order: true
+    notes: "Ta'amiya wrap: 70 EGP, available."
+
+  # =========================================================================
+  # 3. DELIVERY
+  # =========================================================================
+  - task_id: "DEV-DEL-01"
+    family: "delivery"
+    declared_condition: "C0"
+    business_weekday: "wednesday"
+    turns:
+      - utterance: "بتوصّلوا لمصر الجديدة؟ التوصيل بكام و بياخد قد إيه؟"
+        reference_transcript: "بتوصّلوا لمصر الجديدة؟ التوصيل بكام و بياخد قد إيه؟"
+    expected_tools: ["get_delivery_info"]
+    expected_facts:
+      - { type: "number", value: "20" }
+    expect_no_order: true
+    notes: "Zone Z2: fee 20 EGP, ETA 30-40 min."
+
+  - task_id: "DEV-DEL-02"
+    family: "delivery"
+    declared_condition: "C2"
+    business_weekday: "wednesday"
+    turns:
+      - utterance: "I need delivery to Tagamoa، و kam fee؟"
+        reference_transcript: "I need delivery to Tagamoa، و kam fee؟"
+    expected_tools: ["get_delivery_info"]
+    expected_facts:
+      - { type: "number", value: "20" }
+    expect_no_order: true
+    notes: "Zone Z5 New Cairo: fee 20 EGP."
+
+  - task_id: "DEV-DEL-03"
+    family: "delivery"
+    declared_condition: "C1"
+    business_weekday: "wednesday"
+    turns:
+      - utterance: "بتوصّلوا الأقصر؟"
+        reference_transcript: "بتوصّلوا الأقصر؟"
+    expected_tools: ["get_delivery_info"]
+    expect_no_order: true
+    notes: "Luxor is not a delivery zone. The correct behaviour is to refuse delivery and offer pickup."
+
+  # =========================================================================
+  # 4. ORDER CREATION
+  # =========================================================================
+  - task_id: "DEV-ORD-01"
+    family: "order_creation"
+    declared_condition: "C0"
+    business_weekday: "wednesday"
+    turns:
+      - utterance: "عايز تلات سمك، بس السمك ده مش موجود، فالتين طعمية من غير بصل"
+        reference_transcript: "عايز تلات سمك، بس السمك ده مش موجود، فالتين طعمية من غير بصل"
+    expected_tools: ["check_availability", "create_order"]
+    expected_lines:
+      - { item_id: "NB-WRAP-002", quantity: 2, options: ["no_onion"] }
+    expected_subtotal: 140
+    expect_no_order: false
+    notes: >-
+      Unavailable item must be refused, then the fallback ordered. Two falafel
+      wraps at 70 with a 0 EGP no_onion option = 140 subtotal, pickup.
+
+  - task_id: "DEV-ORD-02"
+    family: "order_creation"
+    declared_condition: "C3"
+    business_weekday: "wednesday"
+    turns:
+      - utterance: "عايز طعمية واحدة بس، delivery for Heliopolis"
+        reference_transcript: "عايز طعمية واحدة بس، delivery for Heliopolis"
+    expected_tools: ["create_order"]
+    expect_no_order: true
+    expected_error: "BELOW_MIN_ORDER"
+    notes: >-
+      Refusal task. One falafel wrap is 70 EGP but zone Z2 has a 100 EGP minimum,
+      so the deterministic layer must refuse with BELOW_MIN_ORDER. The correct
+      behaviour is to tell the customer the order is under the minimum, not to
+      silently add items or invent a total.
+
+  # =========================================================================
+  # 5. ORDER MODIFICATION
+  # =========================================================================
+  - task_id: "DEV-MOD-01"
+    family: "order_modification"
+    declared_condition: "C0"
+    business_weekday: "wednesday"
+    turns:
+      - utterance: "عايز اتنين تشيكن برجر وكوكا كولا، توصل الزمالك"
+        reference_transcript: "عايز اتنين تشيكن برجر وكوكا كولا، توصل الزمالك"
+      - utterance: "شيل واحدة من البرجر"
+        reference_transcript: "شيل واحدة من البرجر"
+    expected_lines:
+      - { item_id: "NB-BURG-001", quantity: 1, options: [] }
+      - { item_id: "NB-DRNK-001", quantity: 1, options: [] }
+    expected_subtotal: 170
+    expected_delivery_fee: 15
+    expected_total: 185
+    expected_zone_id: "Z1"
+    expected_tools: ["create_order", "modify_order"]
+    notes: "Remove one burger. Removing it drops the order below the PROM-05 subtotal, so the 40 EGP discount is withdrawn and the fee is charged: 145+25+15 = 185."
+
+  - task_id: "DEV-MOD-02"
+    family: "order_modification"
+    declared_condition: "C2"
+    business_weekday: "wednesday"
+    turns:
+      - utterance: "Order two chicken burgers and one Coke for Zamalek"
+        reference_transcript: "Order two chicken burgers and one Coke for Zamalek"
+      - utterance: "خلي واحد من الـ burgers من غير cheese"
+        reference_transcript: "خلي واحد من الـ burgers من غير cheese"
+    expected_lines:
+      - { item_id: "NB-BURG-001", quantity: 2, options: ["no_cheese"] }
+      - { item_id: "NB-DRNK-001", quantity: 1, options: [] }
+    expected_subtotal: 315
+    expected_delivery_fee: 15
+    expected_total: 290
+    expected_zone_id: "Z1"
+    expected_tools: ["create_order", "modify_order"]
+    notes: "Anaphoric reference: 'one of the burgers' must resolve to L1, then its options replaced. no_cheese costs 0 so the money is unchanged; only the options differ from turn 1."
+
+  # =========================================================================
+  # 6. MULTI-TURN CONTEXT
+  # =========================================================================
+  - task_id: "DEV-CTX-01"
+    family: "multi_turn_context"
+    declared_condition: "C1"
+    business_weekday: "wednesday"
+    turns:
+      - utterance: "عايز اتنين تشيكن برجر"
+        reference_transcript: "عايز اتنين تشيكن برجر"
+      - utterance: "زود كوكا كولا"
+        reference_transcript: "زود كوكا كولا"
+      - utterance: "كام بقى كله؟"
+        reference_transcript: "كام بقى كله؟"
+    expected_lines:
+      - { item_id: "NB-BURG-001", quantity: 2, options: [] }
+      - { item_id: "NB-DRNK-001", quantity: 1, options: [] }
+    expected_subtotal: 315
+    expected_delivery_fee: 0
+    expected_total: 275
+    expected_tools: ["create_order", "modify_order", "calculate_order_total"]
+    notes: "Add then ask for the total. No zone was ever given, so this is pickup: subtotal 315, PROM-05 -40, no delivery fee -> 275."
+
+  - task_id: "DEV-CTX-02"
+    family: "multi_turn_context"
+    declared_condition: "C3"
+    business_weekday: "wednesday"
+    turns:
+      - utterance: "I want a koshari و شاي"
+        reference_transcript: "I want a koshari و شاي"
+      - utterance: "actually، make that two koshari"
+        reference_transcript: "actually، make that two koshari"
+    expected_lines:
+      - { item_id: "NB-GRIL-002", quantity: 2, options: [] }
+      - { item_id: "NB-DRNK-005", quantity: 1, options: [] }
+    expected_subtotal: 190
+    expected_delivery_fee: 0
+    expected_total: 190
+    expected_tools: ["create_order", "modify_order"]
+    notes: "Self-correction of quantity on a previously mentioned item. Pickup, subtotal 190, under the 300 promo and free-delivery thresholds."
+
+  # =========================================================================
+  # 7. COMBINED
+  # =========================================================================
+  - task_id: "DEV-COMB-01"
+    family: "combined"
+    declared_condition: "C2"
+    business_weekday: "wednesday"
+    turns:
+      - utterance: "بتقفلوا امتى؟"
+        reference_transcript: "بتقفلوا امتى؟"
+      - utterance: "I want two chicken burgers and a Coke، deliver to Nasr City"
+        reference_transcript: "I want two chicken burgers and a Coke، deliver to Nasr City"
+    expected_tools: ["get_business_hours", "create_order"]
+    expected_lines:
+      - { item_id: "NB-BURG-001", quantity: 2, options: [] }
+      - { item_id: "NB-DRNK-001", quantity: 1, options: [] }
+    expected_subtotal: 315
+    expected_delivery_fee: 25
+    expected_total: 300
+    expected_zone_id: "Z3"
+    notes: "Hours question then an order. Zone Z3 fee 25, min order 120: 315 -40 (PROM-05) = 275, which is under 300 so the fee is charged -> 315-40+25 = 300."
+
+  - task_id: "DEV-COMB-02"
+    family: "combined"
+    declared_condition: "C4"
+    business_weekday: "wednesday"
+    turns:
+      - utterance: "What promotions do you have on Fridays?"
+        reference_transcript: "What promotions do you have on Fridays?"
+      - utterance: "Okay، I want the mixed grill platter and fries, delivery to Maadi"
+        reference_transcript: "Okay، I want the mixed grill platter and fries, delivery to Maadi"
+    expected_tools: ["get_promotions", "create_order"]
+    expected_lines:
+      - { item_id: "NB-GRIL-001", quantity: 1, options: [] }
+      - { item_id: "NB-SIDE-001", quantity: 1, options: [] }
+    expected_subtotal: 375
+    expected_delivery_fee: 0
+    expected_total: 375
+    expected_zone_id: "Z2"
+    notes: "Promotion question then a large order. No promotion applies: PROM-02 needs a 400 EGP subtotal and this is 375, and PROM-05 needs 2 of NB-BURG-001/NB-SIDE-001 and there is only 1 fries. 375 is over the 300 free-delivery threshold -> 375."
+
+  # =========================================================================
+  # 8. WEEKDAY PROMOTIONS
+  # -------------------------------------------------------------------------
+  # Every other task pins wednesday, where no weekday promotion fires. These
+  # three pin a day that does, so the day gate, the student-id gate and the
+  # free-delivery waiver are all exercised against the real engine. Without
+  # them the weekday machinery would never be covered by a trial.
+  # =========================================================================
+  - task_id: "DEV-PROM-TUE"
+    family: "order_creation"
+    declared_condition: "C2"
+    business_weekday: "tuesday"
+    turns:
+      - utterance: "عايز دبل تشيز برجر، هاخده من عندك"
+        reference_transcript: "عايز دبل تشيز برجر، هاخده من عندك"
+    expected_tools: ["create_order"]
+    expected_lines:
+      - { item_id: "NB-BURG-002", quantity: 1, options: [] }
+    expected_order_mode: "pickup"
+    expected_subtotal: 195
+    expected_total: 156
+    notes: >-
+      Tuesday fires PROM-01, 20% off NB-BURG-002. 195 - 39 = 156, pickup so no
+      fee. The same order on any other day is 195.
+
+  - task_id: "DEV-PROM-SUN-NO-ID"
+    family: "order_creation"
+    declared_condition: "C1"
+    business_weekday: "sunday"
+    turns:
+      - utterance: "عايز مشاوي مشكلة، هاخدها من عندك"
+        reference_transcript: "عايز مشاوي مشكلة، هاخدها من عندك"
+    expected_tools: ["create_order"]
+    expected_lines:
+      - { item_id: "NB-GRIL-001", quantity: 1, options: [] }
+    expected_order_mode: "pickup"
+    expected_subtotal: 320
+    expected_total: 320
+    notes: >-
+      Sunday, and PROM-03's 150 minimum is met, but the customer never mentions
+      a student id, so the gated promotion must NOT be applied: 320. Paired with
+      DEV-PROM-SUN-WITH-ID, which differs only in the customer volunteering the id.
+
+  - task_id: "DEV-PROM-SUN-WITH-ID"
+    family: "order_creation"
+    declared_condition: "C2"
+    business_weekday: "sunday"
+    turns:
+      - utterance: "عايز مشاوي مشكلة، وأنا طالب،(student id STU-4471) هاخدها من عندك"
+        reference_transcript: "عايز مشاوي مشكلة، وأنا طالب،(student id STU-4471) هاخدها من عندك"
+    expected_tools: ["create_order"]
+    expected_lines:
+      - { item_id: "NB-GRIL-001", quantity: 1, options: [] }
+    expected_order_mode: "pickup"
+    student_id: "STU-4471"
+    expected_subtotal: 320
+    expected_total: 288
+    notes: >-
+      The customer states a student id, which is the evidence PROM-03 requires, so
+      10% comes off: 320 - 32 = 288. The agent must pass the id on create_order
+      and must not invent one.
+
+  - task_id: "DEV-PROM-FRI-DELIVERY"
+    family: "delivery"
+    declared_condition: "C3"
+    business_weekday: "friday"
+    turns:
+      - utterance: "عايز تلات طعمية، delivery for Zamalek"
+        reference_transcript: "عايز تلات طعمية، delivery for Zamalek"
+    expected_tools: ["create_order"]
+    expected_lines:
+      - { item_id: "NB-WRAP-002", quantity: 3, options: [] }
+    expected_subtotal: 210
+    expected_delivery_fee: 0
+    expected_total: 210
+    expected_zone_id: "Z1"
+    notes: >-
+      Friday in Z1 at 210 EGP clears PROM-04's 200 minimum but is under the
+      general 300 threshold, so only the promotion can explain the zero fee.
+      On any other day the Z1 fee of 15 would apply and the total would be 225.

@@ -1,0 +1,96 @@
+# Code-switching experimental conditions.
+#
+# SCIENTIFIC STATUS: PROVISIONAL. The researcher has NOT finalized the numerical
+# band boundaries. The values below are placeholders chosen only so the
+# instrument can run end to end. They are read from this file at runtime and can
+# be changed without touching any code.
+#
+# Measure (LOCKED):
+#   English lexical-token proportion = English lexical tokens / total lexical tokens * 100
+#
+# Conceptual condition definitions supplied by the researcher:
+#   C0 = Egyptian Arabic only
+#   C1 = Slight mixing - predominantly Egyptian Arabic with a few English lexical items
+#   C2 = Moderate mixing
+#   C3 = Heavy mixing
+#   C4 = Very heavy mixing - English is dominant while Egyptian Arabic remains
+#        meaningfully present
+
+conditions:
+  provisional: true
+  provisional_note: >-
+    Band boundaries are placeholders. They must be replaced with researcher-approved
+    values before any research run.
+
+  # unit of the measure: percent of lexical tokens that are English
+  unit: "percent"
+  measure: "english_lexical_token_proportion"
+
+  # How a trial's condition is established.
+  #   by_construction  -> the author declares the target condition when authoring the trial
+  #   by_measurement   -> the condition is derived from the measured proportion
+  #   both             -> record both, and flag any disagreement (default, safest)
+  assignment_mode: "both"
+
+  # Tolerance in percentage points when checking that a measured value falls
+  # inside its declared band. Guards against annotation edge cases.
+  band_tolerance_pct_points: 2.0
+
+  bands:
+    - id: "C0"
+      label: "Egyptian Arabic only"
+      label_ar_eg: "عربي مصري بس"
+      min_pct: 0.0
+      max_pct: 0.0
+      min_inclusive: true
+      max_inclusive: true
+      notes: "Zero English lexical tokens. Fixed by the definition of the measure."
+      provisional: false
+
+    - id: "C1"
+      label: "Slight mixing"
+      label_ar_eg: "mixing خفيف"
+      min_pct: 0.0
+      max_pct: 20.0
+      min_inclusive: false
+      max_inclusive: true
+      notes: "PROVISIONAL bounds. Predominantly Egyptian Arabic with a few English lexical items."
+      provisional: true
+
+    - id: "C2"
+      label: "Moderate mixing"
+      label_ar_eg: "mixing متوسط"
+      min_pct: 20.0
+      max_pct: 40.0
+      min_inclusive: false
+      max_inclusive: true
+      notes: "PROVISIONAL bounds."
+      provisional: true
+
+    - id: "C3"
+      label: "Heavy mixing"
+      label_ar_eg: "mixing تقيل"
+      min_pct: 40.0
+      max_pct: 60.0
+      min_inclusive: false
+      max_inclusive: true
+      notes: "PROVISIONAL bounds."
+      provisional: true
+
+    - id: "C4"
+      label: "Very heavy mixing"
+      label_ar_eg: "mixing تقيل جدا"
+      min_pct: 60.0
+      max_pct: 100.0
+      min_inclusive: false
+      max_inclusive: true
+      # Conceptual constraint from the researcher: English dominant while
+      # Egyptian Arabic remains meaningfully present. Enforced only as a
+      # warning until the researcher defines "meaningfully present".
+      soft_max_pct: 90.0
+      soft_max_note: >-
+        PROVISIONAL. A value above this is still C4 numerically, but the
+        conceptual definition says Egyptian Arabic must remain meaningfully
+        present, so such trials should be reviewed before use.
+      notes: "PROVISIONAL bounds."
+      provisional: true

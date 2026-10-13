@@ -1,0 +1,46 @@
+# Nile Bites Voice Agent - main configuration
+# All experimental parameters live in config files, not in code.
+# Anything marked provisional is a methodological choice owned by the researcher.
+
+experiment:
+  # Human-readable id for the current run set. Change per experiment batch.
+  experiment_id: "DEV-000-baseline-instrument"
+  # Free-text note recorded into every log line for this run set.
+  note: "Instrument development run. NOT a research trial."
+  # When true, no data produced is research data.
+  is_research_run: false
+  # Participant identifier. EMPTY during development.
+  #
+  # SCIENTIFIC STATUS: required as soon as is_research_run is true. Every turn is
+  # written to a flat JSONL file with no nesting, so a session that cannot be
+  # attributed to a participant produces rows that cannot be pooled or excluded
+  # later. The CLI refuses to start a formal run without one.
+  participant_id: ""          # e.g. "P001"; pseudonymous, never a real name
+  # Max simultaneous sessions (reserved for future batched runs).
+  max_sessions: 1
+
+  # Weekday the restaurant's business rules run under, used for weekday
+  # promotions (PROM-01 Tuesday, PROM-03 Sunday, PROM-04 Friday) and for
+  # opening hours.
+  #
+  # SCIENTIFIC STATUS: this is a CONTROLLED VARIABLE the researcher must set.
+  # "auto" uses the real current weekday, which means the same trial can produce
+  # a different order total on a different day. That is fine while developing the
+  # instrument and unacceptable for research data, because it would make the
+  # order total a function of the calendar instead of of the code-switching
+  # condition. Pin an explicit weekday before any data collection.
+  business_weekday: "auto"   # auto | monday | tuesday | ... | sunday
+
+runtime:
+  # Console/logs must be UTF-8 to print Arabic correctly on Windows.
+  force_utf8_stdout: true
+  # Where runtime artifacts (temp audio) go, relative to project root.
+  audio_scratch_dir: "audio_out"
+  timezone_for_clock: "local"
+
+paths:
+  restaurant_db: "data/restaurant/nile_bites.json"
+  tasks_file: "data/tasks/tasks.yaml"
+  log_dir: "logs"
+  log_filename_template: "session-{session_id}.jsonl"
+  run_manifest: "logs/runs/{experiment_id}_manifest.json"

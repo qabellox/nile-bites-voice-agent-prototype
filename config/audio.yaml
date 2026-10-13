@@ -1,0 +1,56 @@
+# Microphone capture, voice activity detection, and playback.
+#
+# SCIENTIFIC NOTE: audio.* is a CONTROLLED VARIABLE ("audio conditions").
+# Sample rate, channel count, device selection, and VAD parameters must be
+# identical for every trial, otherwise latency and ASR accuracy are not
+# comparable across code-switching conditions.
+#
+# LATENCY DEFINITION (LOCKED): time from the end of the user's speech to the
+# beginning of the agent's response. The pipeline therefore stamps
+# `speech_end` using the moment the VAD decides the utterance finished, and
+# `response_audio_start` using the moment the first audio sample is handed to
+# the output device. The VAD endpoint decision is the measurement instrument for
+# "end of speech", so its parameters are part of the method and are recorded
+# in the run manifest.
+
+audio:
+  input:
+    device: null              # null -> system default input device
+    sample_rate: 16000
+    channels: 1
+    block_ms: 20              # frames per read from the stream
+    dtype: "int16"
+
+  vad:
+    # Energy-based endpointing. No extra dependency, fully deterministic,
+    # and identical across conditions.
+    algorithm: "energy"
+    # Speaking is declared when RMS exceeds start_threshold for start_duration_ms.
+    start_threshold: 0.012    # linear RMS, 0..1 on int16-normalised audio
+    # Silence is declared after this long below the threshold.
+    end_silence_ms: 700
+    # Ignore blips shorter than this.
+    min_speech_ms: 250
+    # Never keep a single utterance longer than this; force a cut.
+    max_utterance_ms: 15000
+    # Extra audio kept after endpoint detection, to avoid clipping the tail.
+    tail_pad_ms: 250
+    # Absolute floor below which audio is treated as silence regardless of
+    # start_threshold, to reject room noise.
+    noise_floor_rms: 0.004
+    # Auto-calibrate the noise floor from the first N ms of the session.
+    auto_calibrate: true
+    auto_calibrate_ms: 1200
+
+  output:
+    device: null              # null -> system default output device
+    sample_rate: null         # null -> use the TTS output rate
+    latency: "low"
+
+  session:
+    # Barge-in: stop playback and listen when the user starts speaking.
+    barge_in: false
+    # Seconds of leading silence trimmed from each captured utterance.
+    trim_leading_silence: true
+    # Hard cap on a live session, seconds. 0 disables.
+    max_session_seconds: 1800

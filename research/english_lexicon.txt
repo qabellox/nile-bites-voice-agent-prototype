@@ -1,0 +1,667 @@
+# English lexicon for the code-switching measure.
+#
+# SCIENTIFIC STATUS: supporting resource, PROVISIONAL. A Latin-script token is
+# classified as English when it appears here. The set below covers function
+# words, common verbs/nouns, and the restaurant domain. The classifier also
+# extends this at run time with the English aliases from the restaurant dataset
+# (research.codeswitch.classification.extend_with_dataset_aliases).
+#
+# One token per line. Lines starting with # and blank lines are ignored.
+# Matching is done on the normalised (lowercased, punctuation-stripped) form.
+
+# --- function words ---
+a
+an
+the
+and
+or
+but
+so
+if
+then
+than
+that
+this
+these
+those
+there
+here
+is
+are
+was
+were
+be
+been
+being
+am
+do
+does
+did
+done
+have
+has
+had
+having
+will
+would
+shall
+should
+can
+could
+may
+might
+must
+need
+needs
+needed
+want
+wants
+wanted
+like
+please
+ok
+okay
+yes
+no
+not
+don
+dont
+doesn
+doesnt
+now
+also
+just
+still
+very
+really
+quite
+too
+more
+most
+less
+least
+much
+many
+some
+any
+all
+every
+each
+other
+another
+same
+different
+only
+both
+either
+neither
+up
+down
+out
+over
+under
+again
+back
+once
+twice
+one
+two
+three
+four
+five
+six
+seven
+eight
+nine
+ten
+eleven
+twelve
+thirteen
+fourteen
+fifteen
+sixteen
+seventeen
+eighteen
+nineteen
+twenty
+thirty
+forty
+fifty
+sixty
+seventy
+eighty
+ninety
+hundred
+first
+second
+third
+fourth
+fifth
+last
+next
+half
+zero
+
+# --- question and politeness ---
+what
+which
+who
+whom
+whose
+where
+when
+why
+how
+how much
+how many
+how long
+whats
+whats the
+wheres
+whens
+thanks
+thank
+sorry
+hello
+hi
+hey
+welcome
+excuse
+me
+sure
+certainly
+definitely
+absolutely
+maybe
+course
+
+# --- ordering verbs ---
+order
+ordering
+ordered
+add
+added
+remove
+removed
+delete
+change
+changed
+modify
+update
+cancel
+cancelled
+canceled
+confirm
+confirmed
+get
+got
+give
+put
+replace
+swap
+make
+made
+take
+want
+need
+book
+reserve
+send
+show
+tell
+check
+find
+search
+look
+help
+start
+begin
+finish
+done
+wait
+hold
+keep
+stop
+finish
+apply
+include
+exclude
+double
+triple
+extra
+without
+with
+instead
+rather
+plus
+minus
+
+# --- food and drink domain ---
+burger
+burgers
+cheeseburger
+cheese
+chicken
+beef
+lamb
+fish
+falafel
+taamiya
+koshari
+koshary
+molokhia
+molokia
+shakshouka
+shakshuka
+shawarma
+wrap
+wraps
+sandwich
+sandwiches
+pita
+bun
+buns
+bread
+toast
+fries
+fries
+potato
+potatoes
+tomato
+tomatoes
+salad
+salads
+soup
+soup
+rice
+pasta
+pizza
+cake
+cake
+dessert
+desserts
+sweet
+sweets
+pie
+pudding
+hummus
+tabbouleh
+coleslaw
+slaw
+onion
+onions
+garlic
+pepper
+peppers
+chili
+spicy
+mild
+hot
+cold
+warm
+fresh
+frozen
+grilled
+fried
+baked
+boiled
+raw
+vegetarian
+vegan
+halal
+kosher
+meat
+seafood
+chicken
+diet
+sugar
+salt
+pepper
+oil
+butter
+cream
+milk
+yogurt
+hummus
+tahini
+mayonnaise
+ketchup
+mustard
+sauce
+sauces
+dipping
+
+# --- drinks ---
+coke
+cola
+coca
+coca cola
+pepsi
+sprite
+fanta
+water
+sparkling
+still
+juice
+orange
+lemon
+lime
+apple
+mango
+banana
+strawberry
+lemonade
+tea
+coffee
+espresso
+cappuccino
+latte
+americano
+turkish
+karkady
+soda
+drink
+drinks
+beverage
+bottle
+can
+cans
+glass
+large
+small
+medium
+regular
+size
+sizes
+served
+
+# --- restaurant domain ---
+menu
+restaurant
+item
+items
+dish
+dishes
+option
+options
+price
+prices
+cost
+costs
+cheap
+expensive
+total
+subtotal
+bill
+check
+receipt
+payment
+pay
+cash
+card
+cash on delivery
+delivery
+deliver
+delivered
+takeaway
+take out
+pickup
+pick up
+collect
+zone
+zones
+area
+areas
+address
+location
+minimum
+min
+delivery fee
+fee
+fees
+tip
+tips
+tax
+offer
+offers
+offering
+promotion
+promotions
+promo
+discount
+discounts
+coupon
+deal
+deals
+combo
+combo meal
+set meal
+menu item
+available
+availability
+unavailable
+sold out
+out of stock
+stock
+fresh today
+hours
+open
+closed
+closing
+opening
+week
+weekend
+weekday
+today
+tomorrow
+now
+time
+times
+minutes
+minute
+hour
+hours
+wait
+ready
+ready in
+preparation
+preparing
+kitchen
+chef
+order number
+order id
+receipt number
+customer
+customer
+name
+phone
+number
+call
+confirm
+confirmed
+note
+notes
+instruction
+instructions
+special
+specials
+without onions
+no onions
+extra cheese
+sauce on side
+napkins
+cutlery
+table
+dine in
+dine-in
+reservation
+booking
+table for
+people
+persons
+guests
+adults
+children
+kids
+spicy level
+medium spice
+hot spice
+no sauce
+extra sauce
+add bacon
+remove cheese
+swap
+instead
+topping
+toppings
+side
+sides
+extra patty
+double patty
+sauce
+portion
+portions
+box
+boxes
+bag
+bags
+wrap it
+wrapped
+sauce on the side
+mild
+spice level
+temperature
+hot sauce
+ketchup
+mustard
+mayo
+mayonnaise
+extra napkins
+mushroom
+mushrooms
+olives
+corn
+cheese slice
+cheese slices
+cheddar
+mozzarella
+parmesan
+halloumi
+pepperoni
+bacon
+lettuce
+pickles
+tomato
+beef patty
+chicken patty
+combo meal
+family meal
+kids meal
+starter
+appetizer
+starter
+main course
+main dish
+side dish
+special of the day
+chef's special
+daily special
+spicy
+mild
+hot
+extra spicy
+sauce on side
+no ice
+less ice
+no sugar
+diet coke
+zero sugar
+sugar free
+
+# --- order modifiers and misc ---
+two
+three
+four
+five
+six
+seven
+eight
+nine
+ten
+dozen
+half
+quarter
+portion
+size
+big
+large
+small
+medium
+regular
+extra
+without
+no
+not
+with
+and
+to
+for
+of
+in
+on
+at
+from
+my
+me
+i
+we
+us
+our
+mine
+that
+this
+it
+its
+is
+are
+be
+please
+thanks
+okay
+hey
+hi
+hello
+good
+great
+perfect
+sure
+right
+wrong
+yes
+yeah
+no
+nope
+maybe
+definitely
+absolutely
+exactly
+anything
+something
+nothing
+everything
+someone
+anyone
+everyone
+now
+later
+soon
+again
+still
+already
+yet
+ever
+never
+always
+sometimes
+often
+usually

@@ -1,0 +1,51 @@
+trials:
+- trial_id: PILOT-ORD2-C0
+  task_id: ORD2-C0
+  audio_path: data/pilot/audio/ord2-c0.wav
+  speaker:
+    source: synthetic
+    engine: edge-tts
+    voice: ar-EG-SalmaNeural
+  verified_english_pct: 0.0
+  declared_condition: C0
+  note: DEVELOPMENT ONLY. Not research data.
+- trial_id: PILOT-ORD2-C1
+  task_id: ORD2-C1
+  audio_path: data/pilot/audio/ord2-c1.wav
+  speaker:
+    source: synthetic
+    engine: edge-tts
+    voice: ar-EG-SalmaNeural
+  verified_english_pct: 12.5
+  declared_condition: C1
+  note: DEVELOPMENT ONLY. Not research data.
+- trial_id: PILOT-ORD2-C2
+  task_id: ORD2-C2
+  audio_path: data/pilot/audio/ord2-c2.wav
+  speaker:
+    source: synthetic
+    engine: edge-tts
+    voice: ar-EG-SalmaNeural
+  verified_english_pct: 33.33
+  declared_condition: C2
+  note: DEVELOPMENT ONLY. Not research data.
+- trial_id: PILOT-ORD2-C3
+  task_id: ORD2-C3
+  audio_path: data/pilot/audio/ord2-c3.wav
+  speaker:
+    source: synthetic
+    engine: edge-tts
+    voice: ar-EG-SalmaNeural
+  verified_english_pct: 57.14
+  declared_condition: C3
+  note: DEVELOPMENT ONLY. Not research data.
+- trial_id: PILOT-ORD2-C4
+  task_id: ORD2-C4
+  audio_path: data/pilot/audio/ord2-c4.wav
+  speaker:
+    source: synthetic
+    engine: edge-tts
+    voice: en-US-JennyNeural
+  verified_english_pct: 75.0
+  declared_condition: C4
+  note: DEVELOPMENT ONLY. Not research data.

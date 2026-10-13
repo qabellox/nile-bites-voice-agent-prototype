@@ -1,0 +1,35 @@
+# Secrets
+.env
+*.key
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# Captured and synthesized audio. Raw participant speech must not be committed.
+audio_out/
+logs/
+05_Audio/**/*.wav
+05_Audio/**/*.mp3
+
+# Trial data. Nothing produced by a run belongs in version control: it is
+# participant data. Only the run *outputs* are ignored here, because an
+# experiment configuration is a controlled variable and must stay trackable.
+07_Experiments/runs/
+*.session.jsonl
+research/results/
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

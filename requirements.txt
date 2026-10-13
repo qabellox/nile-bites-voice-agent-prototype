@@ -1,0 +1,39 @@
+# Nile Bites Voice Agent - runtime dependencies
+#
+# The base install is enough to run the test suite, the deterministic tools, the
+# logging, and the code-switching measure with no network and no API keys.
+#
+# For the real-time voice experience, install the two extras below.
+
+# --- core ---
+pydantic>=2.6
+PyYAML>=6.0
+numpy>=1.26
+sounddevice>=0.4.6      # microphone capture and speaker playback (needs PortAudio)
+soundfile>=0.12        # reading synthesized audio files
+
+# --- speech recognition: local Whisper, no API key required ---
+faster-whisper>=1.0
+
+# --- speech synthesis: neural voices, no API key, needs internet ---
+edge-tts>=6.1
+
+# --- offline TTS fallback (Windows SAPI5) ---
+pyttsx3>=2.90
+
+# --- hosted LLM providers (only needed if not using a local server) ---
+openai>=1.30
+# anthropic>=0.30
+# google-genai>=1.0
+
+# --- development ---
+pytest>=8.0
+
+# --- development voice UI (scripts/dev_ui.py) ---
+flask>=3.0
+python-dotenv>=1.0
+requests>=2.31
+
+# NOTE: torch is intentionally NOT listed: it is only needed for local
+# experimental TTS evaluation (e.g. Chatterbox fine-tunes), never for the
+# baseline, the streaming package, the test suite, or the dev UI.

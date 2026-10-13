@@ -1,0 +1,101 @@
+meta:
+  kind: development-pilot
+  meaning: order two chicken burgers, pickup
+  synthetic: true
+  not_research_data: true
+tasks:
+- task_id: ORD2-C0
+  family: order_creation
+  declared_condition: C0
+  business_weekday: monday
+  turns:
+  - index: 0
+    utterance: عايز اتنين برجر فراخ من فضلك
+    reference_transcript: عايز اتنين برجر فراخ من فضلك
+    declared_condition: C0
+    note: dev-only synthetic control
+  expected_lines:
+  - item_id: NB-BURG-001
+    quantity: 2
+  expected_order_mode: pickup
+  expect_no_error: true
+  expected_tools:
+  - create_order
+  notes: DEVELOPMENT ONLY. Synthetic Edge-TTS audio. Same meaning across C0-C4; only
+    the language mix varies.
+- task_id: ORD2-C1
+  family: order_creation
+  declared_condition: C1
+  business_weekday: monday
+  turns:
+  - index: 0
+    utterance: عايز اعمل order لاتنين برجر فراخ من فضلك
+    reference_transcript: عايز اعمل order لاتنين برجر فراخ من فضلك
+    declared_condition: C1
+    note: dev-only synthetic control
+  expected_lines:
+  - item_id: NB-BURG-001
+    quantity: 2
+  expected_order_mode: pickup
+  expect_no_error: true
+  expected_tools:
+  - create_order
+  notes: DEVELOPMENT ONLY. Synthetic Edge-TTS audio. Same meaning across C0-C4; only
+    the language mix varies.
+- task_id: ORD2-C2
+  family: order_creation
+  declared_condition: C2
+  business_weekday: monday
+  turns:
+  - index: 0
+    utterance: عايز اتنين chicken burgers من فضلك
+    reference_transcript: عايز اتنين chicken burgers من فضلك
+    declared_condition: C2
+    note: dev-only synthetic control
+  expected_lines:
+  - item_id: NB-BURG-001
+    quantity: 2
+  expected_order_mode: pickup
+  expect_no_error: true
+  expected_tools:
+  - create_order
+  notes: DEVELOPMENT ONLY. Synthetic Edge-TTS audio. Same meaning across C0-C4; only
+    the language mix varies.
+- task_id: ORD2-C3
+  family: order_creation
+  declared_condition: C3
+  business_weekday: monday
+  turns:
+  - index: 0
+    utterance: عايز two chicken burgers من فضلك please
+    reference_transcript: عايز two chicken burgers من فضلك please
+    declared_condition: C3
+    note: dev-only synthetic control
+  expected_lines:
+  - item_id: NB-BURG-001
+    quantity: 2
+  expected_order_mode: pickup
+  expect_no_error: true
+  expected_tools:
+  - create_order
+  notes: DEVELOPMENT ONLY. Synthetic Edge-TTS audio. Same meaning across C0-C4; only
+    the language mix varies.
+- task_id: ORD2-C4
+  family: order_creation
+  declared_condition: C4
+  business_weekday: monday
+  turns:
+  - index: 0
+    utterance: Can I order two chicken burgers من فضلك
+    reference_transcript: Can I order two chicken burgers من فضلك
+    declared_condition: C4
+    note: dev-only synthetic control
+  expected_lines:
+  - item_id: NB-BURG-001
+    quantity: 2
+  expected_order_mode: pickup
+  expect_no_error: true
+  expected_tools:
+  - create_order
+  notes: DEVELOPMENT ONLY. Synthetic Edge-TTS audio. Same meaning across C0-C4; only
+    the language mix varies.

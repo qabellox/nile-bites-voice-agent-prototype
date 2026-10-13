@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nbva"
+version = "0.2.0"
+description = "Nile Bites Voice Agent - research instrument for Egyptian Arabic-English code-switching studies"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Research use only" }
+
+dependencies = [
+    "pydantic>=2.6",
+    "PyYAML>=6.0",
+    "numpy>=1.26",
+    "sounddevice>=0.4.6",
+    "soundfile>=0.12",
+]
+
+[project.optional-dependencies]
+# Local speech recognition. The default ASR path, and the one that needs no key.
+asr-local = ["faster-whisper>=1.0"]
+# Neural TTS with no API key (needs internet).
+tts-edge = ["edge-tts>=6.1"]
+# Offline Windows TTS fallback.
+tts-sapi = ["pyttsx3>=2.90"]
+# Hosted providers.
+llm-hosted = ["openai>=1.30", "anthropic>=0.30", "google-genai>=1.0"]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+nbva = "nbva.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"
+filterwarnings = ["ignore::DeprecationWarning"]

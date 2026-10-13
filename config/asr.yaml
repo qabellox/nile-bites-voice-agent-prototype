@@ -1,0 +1,46 @@
+# Speech recognition settings.
+#
+# asr.provider selects the adapter. Adapters live in nbva/asr/.
+#   faster_whisper  -> local Whisper via CTranslate2. No API key. Reproducible.
+#   openai          -> OpenAI hosted Whisper endpoint. Needs OPENAI_API_KEY.
+#   manual          -> typed text instead of audio. Development only, never a trial.
+#   scripted        -> reads reference transcript from the trial definition. Testing only.
+#
+# SCIENTIFIC NOTE: asr.model, asr.params, and asr.sample_rate are CONTROLLED
+# VARIABLES. They must be frozen and recorded in the run manifest before research
+# data is collected, and must not change between conditions.
+
+asr:
+  provider: "faster_whisper"
+
+  sample_rate: 16000          # canonical rate for ASR input
+  language: "ar"              # primary spoken language hint
+  task: "transcribe"
+
+  faster_whisper:
+    model: "small"            # tiny | base | small | medium | large-v3
+    device: "cpu"
+    compute_type: "int8"      # int8 | int8_float16 | float16 | float32
+    beam_size: 1
+    vad_filter: false
+    condition_on_previous_text: false
+    # Freezing these matters for latency comparability.
+    num_workers: 1
+    download_root: null       # null -> faster-whisper default HF cache
+
+  openai:
+    model: "whisper-1"
+    api_key_env: "OPENAI_API_KEY"
+    temperature: 0
+    prompt: null
+
+  manual:
+    prompt_text: "Type what you would say, then press Enter:"
+
+  # Applied to the raw transcript before it reaches the LLM.
+  postprocess:
+    strip: true
+    collapse_whitespace: true
+    # Lowercasing is OFF by default: the code-switching measure is
+    # case-insensitive, but preserving case keeps WER reference matching honest.
+    lowercase: false

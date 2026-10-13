@@ -1,0 +1,48 @@
+# Text-to-speech settings.
+#
+# tts.provider selects the adapter. Adapters live in nbva/tts/.
+#   edge    -> Microsoft Edge neural voices via edge-tts. No API key, needs internet.
+#   sapi    -> Windows SAPI5 via pyttsx3. Fully offline, robotic, lowest latency.
+#   openai  -> OpenAI hosted TTS. Needs OPENAI_API_KEY.
+#   null    -> no audio, only text. Latency measurement is invalid in this mode.
+#
+# SCIENTIFIC NOTE: tts.* is NOT a primary outcome (TTS quality is out of scope),
+# but TTS synthesis time and audio start time are inside the primary latency
+# definition. The provider and voice must therefore be held CONSTANT across
+# conditions and recorded in the run manifest.
+
+tts:
+  provider: "edge"
+  enabled: true
+
+  # Voice must support BOTH Arabic (ar-EG) and English (en-US) for this study.
+  # Edge neural voices are multilingual; SAPI5 usually needs a per-language voice.
+  voice: "ar-EG-SalmaNeural"
+  fallback_voice: "en-US-JennyNeural"
+  rate: "+0%"
+  volume: "+0%"
+  pitch: "+0Hz"
+
+  edge:
+    output_format: "mp3"
+    # Auto-fallback to fallback_voice if the primary voice is unavailable.
+    allow_fallback: true
+
+  sapi:
+    voice_hint: null           # substring match against installed voices
+    rate: 175
+
+  openai:
+    model: "tts-1"
+    voice: "alloy"
+    api_key_env: "OPENAI_API_KEY"
+    speed: 1.0
+
+  playback:
+    # Block until playback finishes before accepting the next utterance.
+    wait_for_completion: true
+    # Fade milliseconds applied to the start of playback.
+    fade_in_ms: 5
+    # Do not capture microphone audio while the agent is speaking, to avoid
+    # the agent transcribing itself. This is a measurement hygiene setting.
+    mute_mic_during_playback: true

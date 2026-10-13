@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nile Bites Voice Agent</title>
+    <style>
+        body {font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f0f0f0;}
+        .button {padding: 20px 40px; font-size: 24px; cursor: pointer; border: 2px solid #4CAF50; border-radius: 10px; background: #4CAF50; color: white; margin: 20px;}
+        .button.recording {border-color: #f44336; background: #f44336; box-shadow: 0 0 20px #f44336;}
+        .status {padding: 10px; margin: 20px 0; background: #fff; border-radius: 5px; display: inline-block; min-width: 150px;}
+        .log {background: #f8f8f8; padding: 10px; border-radius: 5px; margin: 10px 0; max-height: 300px; overflow-y: auto; font-family: monospace;}
+    </style>
+</head>
+<body>
+    <h1>Nile Bites Voice Agent</h1>
+    <div class="status" id="status">Ready</div>
+    <div class="log" id="log">Ready</div>
+    <button class="button" id="talkBtn" onclick="startStop()">TALK</button>
+    <div class="log" id="transcript">ASR Transcript: Waiting...</div>
+    <div class="log" id="response">Agent Response: Waiting...</div>
+    <script>
+        function updateStatus(t) {document.getElementById('status').innerText = t;}
+        function updateTranscript(t) {document.getElementById('transcript').innerText = 'ASR Transcript: ' + t;}
+        function updateResponse(t) {document.getElementById('response').innerText = 'Agent Response: ' + t;}
+        function showAlert(t) {alert('Agent Response: ' + t);}
+        function startStop() {
+            var btn = document.getElementById('talkBtn');
+            if (!btn.classList.contains('recording')) {
+                btn.classList.add('recording');
+                updateStatus('Listening');
+                fetch('/record', {method: 'POST', body: 'duration=5'}).then(function(r) {return r.json();}).then(function(data) {
+                    updateStatus('Speaking');
+                    updateTranscript(data.transcript || 'No transcript');
+                    updateResponse(data.response || 'No response');
+                    showAlert(data.response || 'No response');
+                    btn.classList.remove('recording');
+                }).catch(function(e) {updateStatus('Error: ' + e.message); btn.classList.remove('recording');});
+            }
+        }
+    </script>
+</body>
+</html>"""

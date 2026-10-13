@@ -1,0 +1,35 @@
+llm:
+  anthropic:
+    api_key_env: ANTHROPIC_API_KEY
+    max_tokens: 800
+    model: claude-sonnet-4-5
+  google:
+    api_key_env: GEMINI_API_KEY
+    model: gemini-2.0-flash
+  max_tokens: 400
+  max_tool_iterations: 6
+  model: qwen2.5:7b-instruct
+  openai:
+    api_key_env: OPENAI_API_KEY
+    base_url: null
+  openai_compatible:
+    api_key_env: null
+    api_key_fallback: not-needed
+    base_url: https://openrouter.ai/api/v1
+  provider: openai_compatible
+  retries: 0
+  scripted:
+    mode: fixed_reply
+    plan: []
+  temperature: 0.0
+  timeout_seconds: 60
+  top_p: 1.0
+system_prompt:
+  file: config/prompts/baseline_system_prompt.md
+  response_language: match_user
+  spell_prices_in_words: true
+tools:
+  enabled: true
+  enforce_grounding: true
+  log_calls: true
+  strict_arguments: true

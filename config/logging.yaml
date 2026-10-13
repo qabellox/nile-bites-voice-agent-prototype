@@ -1,0 +1,43 @@
+# Structured logging configuration.
+#
+# One JSON object per line (JSONL), one file per session, plus an optional
+# summary line per turn. The schema is designed so the files can be loaded
+# directly into pandas for statistical analysis without preprocessing.
+
+logging:
+  enabled: true
+  dir: "logs"
+  # JSONL is append-only and crash-tolerant; preferred during live voice runs.
+  format: "jsonl"
+  # Mirror every event to stdout for live inspection.
+  echo_to_console: true
+  # Console verbosity when echo_to_console is on: debug | info | warn | error
+  console_level: "info"
+
+  # Persist the raw captured audio of each utterance. Required for any later
+  # re-scoring of ASR, and for verifying the latency claim.
+  save_audio: true
+  audio_format: "wav"
+  audio_dir: "logs/audio"
+
+  # Persist the synthesized response audio. Useful for auditing, not required.
+  save_tts_audio: false
+
+  # Write a per-run manifest pinning every controlled variable, so a run can be
+  # reproduced and a later comparison knows what was held constant.
+  write_run_manifest: true
+
+  # Record the fully resolved configuration into each session file.
+  snapshot_config: true
+
+  # Fields to keep in the per-turn summary even if empty.
+  always_include:
+    - session_id
+    - turn_index
+    - timestamp_utc
+    - experiment_id
+    - is_research_run
+
+  # Redact nothing by default: transcripts are the research data.
+  redaction:
+    enabled: false

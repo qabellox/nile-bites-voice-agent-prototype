@@ -1,0 +1,80 @@
+# Research measurement settings.
+#
+# These control HOW the instrument measures, never WHAT is measured
+# scientifically. Metric definitions themselves are locked by the methodology.
+
+research:
+  # --- code-switching measure (LOCKED) --------------------------------
+  codeswitch:
+    # Count these as lexical tokens.
+    count_numerals: true          # "2", "3" are lexical tokens
+    # Punctuation and symbols are never lexical tokens.
+    # A token is English when it contains Latin letters AND is judged English by
+    # the classifier below.
+    classification:
+      # latin_script_is_english_unless: an empty English lexicon would classify
+      # every Latin-script token as English. The lexicon is loaded from the file
+      # below and extended at run time from the restaurant dataset aliases, which
+      # are the only English words the domain requires.
+      lexicon_file: "research/english_lexicon.txt"
+      # Latin-script tokens found in the restaurant dataset are treated as English
+      # even if absent from the lexicon file.
+      extend_with_dataset_aliases: true
+      # Tokens that are Latin script but are known Arabic loanwords written
+      # in Latin script (Egyptian chat behaviour). Keep this list empty unless
+      # the researcher approves an explicit list.
+      latin_script_arabic_loanwords: []
+      # When a token is Latin script and unknown to the lexicon, classify as:
+      #   english  -> assume an English word (default, conservative for recall)
+      #   other    -> exclude from both numerator and denominator
+      #   arabic   -> treat as Arabic transliteration
+      unknown_latin_token_policy: "english"
+      # Arabic tokens are never English.
+      arabic_is_english: false
+    # Persist the per-token classification so the measure can be audited.
+    store_token_trace: true
+
+  # --- ASR accuracy (WER) --------------------------------------------
+  wer:
+    # Normalisation applied to BOTH reference and hypothesis before scoring.
+    # All flags are PROVISIONAL methodological choices awaiting approval.
+    provisional: true
+    lowercase: true
+    strip_punctuation: true
+    collapse_whitespace: true
+    # Arabic orthographic folding (hamza/alef/ya/ta-marbuta) applied to both sides.
+    fold_arabic_variants: true
+    strip_arabic_diacritics: true
+    # Numerals: convert Arabic-Indic digits to ASCII, and optionally spell out
+    # small integers so "2" and "two" can match.
+    normalize_digits: true
+    spell_out_small_numbers: false
+    spell_out_limit: 20
+
+  # --- task evaluation -------------------------------------------------
+  evaluation:
+    # How a trial is judged successful. Grading is by the task definition, not
+    # by the model, so evaluation stays independent of the system under test.
+    mode: "assertions"
+    # Require the final state to match, not just the wording of the response.
+    require_state_match: true
+    # WER above this counts as an ASR failure regardless of task outcome.
+    # PROVISIONAL placeholder; researcher must set the final threshold.
+    asr_failure_wer_threshold: 0.5
+    # Latency above this counts as a latency/timeout failure. PROVISIONAL.
+    latency_failure_seconds: 10.0
+
+  # --- latency --------------------------------------------------------
+  latency:
+    # LOCKED primary definition: end of user speech -> start of agent audio.
+    primary_metric: "speech_end_to_response_audio_start"
+    # Component timings logged where technically possible (diagnostic only).
+    components:
+      - "asr"
+      - "nlu"
+      - "tools"
+      - "response_generation"
+      - "tts_synthesis"
+      - "tts_playback_start"
+    # Reps recorded per trial when running unattended batches.
+    default_repetitions: 1
