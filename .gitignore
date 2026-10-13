@@ -25,6 +25,7 @@ logs/
 # participant data. Only the run *outputs* are ignored here, because an
 # experiment configuration is a controlled variable and must stay trackable.
 07_Experiments/runs/
+runs/
 *.session.jsonl
 research/results/
 

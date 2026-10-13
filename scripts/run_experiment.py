@@ -16,6 +16,7 @@ Examples:
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -28,7 +29,9 @@ load_dotenv(ROOT / ".env", override=False)
 try:
     # The user-confirmed key file wins over ambient shell values, which may
     # hold an invalid placeholder (observed: 11-char key causing 401s).
-    load_dotenv(Path(r"C:\Users\Qebaa\.env"), override=True)
+    # Portable: NBVA_ENV_FILE wins, otherwise ~/.env on any machine.
+    load_dotenv(Path(os.environ.get("NBVA_ENV_FILE", Path.home() / ".env")),
+                override=True)
 except Exception:
     pass
 
