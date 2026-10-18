@@ -184,6 +184,71 @@ different one than the behaviour it froze.
    applies to the dead `asr_failure_wer_threshold` key (currently effective
    0.5 everywhere by hard-coded default).
 
+### P-10 implementation proposal (agent; gated on the decisions above)
+
+No cutoff is chosen here. This is the wiring that will be built once the
+researcher has defined the two concepts and their thresholds.
+
+**Two metrics, named distinctly everywhere.**
+
+- **First-audio latency** — speech end → first response audio sample. Already
+  the LOCKED primary metric (`latency_s`; `LatencyMarkers.response_audio_start`).
+- **Turn completion** — speech end → the response and its required processing
+  are finished (final audio ready; final tool loop and synthesis done). This
+  metric does not exist yet: `TrialRecord` has no completion field, and batch
+  records stamp `speech_end_utc`/`response_audio_utc` with the record-creation
+  time (`runner.py:417`) — placeholders, not measured endpoints. The live path
+  already stamps the underlying marker (`response_audio_end_mono`,
+  `events.py:78,148`); it is never surfaced into records.
+
+**One authoritative source.** A single function — `thresholds_from_config(config)`
+— reads both cutoffs from `research.evaluation` (key names to follow the
+researcher's definitions, e.g. `first_audio_failure_seconds`,
+`turn_completion_failure_seconds`). It becomes the only reader:
+
+- `ExperimentRunner` takes the values as a constructor argument from that
+  function; the `getattr(..., 120.0)` fallbacks (`runner.py:123-124,394-396`)
+  are removed so no hard-coded number can survive.
+- `freeze_experiment` calls the same function and stamps both values into
+  `freeze.json.thresholds`, so config, freeze and behaviour share one code path
+  and cannot drift apart.
+- The dead keys are replaced, and a regression test asserts that editing
+  `research.yaml` changes both the runner's applied value and the frozen value —
+  the test whose absence allowed the 10-vs-120 state to exist.
+
+**Applied identically to both architectures.** Classification already runs at
+one shared point for both arms (`runner.py:392-403`, inside the
+baseline/streaming loop). Both arms must supply both metrics to it:
+
+- First-audio: the arms do not currently compute the same construct — baseline
+  sums component spans and omits `tools_ms` (`runner.py:380`), streaming uses
+  `first_audio − endpoint` (`runner.py:384-387`). Standardise to one definition
+  (first response audio available, measured from speech end) computed the same
+  way for each arm, or document arm-specific proxies in `freeze.json` so they
+  are never compared as if identical.
+- Completion: both arms must emit a completion endpoint. Baseline's completion
+  coincides with its first audio (sequential: full TTS before playback);
+  streaming's is the final chunk — surfaced into `TrialRecord.turn_completion_s`
+  and the CSV columns (`experiment.py:405`).
+- `classify_failure` receives both durations and both thresholds and records
+  **which** metric tripped in `failure_detail` (e.g. `latency_metric:
+  first_audio | turn_completion`). The ten locked categories are unchanged —
+  `latency/timeout` stays one category, the detail keeps the two outcomes
+  distinguishable so a single cutoff cannot silently merge them.
+
+**Observed behaviour the researcher should factor into the analysis decision:**
+`classify_failure` returns immediately when the task succeeded
+(`failure.py:119-120`), so today a trial can exceed the threshold and keep
+category "ok". Whether exceeding a latency threshold should mark an otherwise
+successful trial as a latency failure — or latency should enter analysis only as
+the raw recorded metric — is part of decision 3 above.
+
+**Not started until P-10 is decided:** the cutoffs themselves, the definition of
+completion in each `audio_mode` (batch records are audio-READY, never played,
+per protocol §9, and are never mixed with live endpoints), and how each metric
+enters the analysis. After the decision, the wiring above lands as one
+implementation commit with tests.
+
 ---
 
 ## Implementation notes that are not decisions
