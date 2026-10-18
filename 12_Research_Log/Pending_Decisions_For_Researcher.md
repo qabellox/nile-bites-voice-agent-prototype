@@ -144,6 +144,48 @@ before anyone is exposed to a trial.
 
 ---
 
+## P-10 — Latency-failure threshold: the config value is dead and the effective value is 120s
+
+**Code now.** Every runtime path uses **120 seconds**: `ExperimentRunner`
+defaults (`runner.py:123-124`) feed `classify_failure` (`runner.py:394-396`),
+`freeze_experiment` stamps 120 into `freeze.json` (`experiment.py:116,171-172` —
+`run_experiment.py` calls it with no threshold arguments), the tests encode 120
+(`test_experiment.py:195`), and EXPERIMENT_PROTOCOL §15.3 states 120 as the
+default. Meanwhile `config/research.yaml:65` sets
+`latency_failure_seconds: 10.0` and `:63` sets `asr_failure_wer_threshold: 0.5` —
+and **no code ever reads `research.evaluation.*`** (verified: the only consumed
+`research.*` keys are `research.codeswitch.*` and `research.wer.*`). The 10.0 in
+the config file therefore has no effect today. It is a documentation trap: an
+edit there would silently change nothing while `freeze.json` keeps freezing 120.
+
+**Why it matters.** The two numbers classify the same trial differently — a 30s
+turn is a latency failure under one and not under the other, which changes
+`failure_category`, the failure distribution, and the robustness curve. Whatever
+value is chosen, a formal run must not carry a config file that advertises a
+different one than the behaviour it froze.
+
+**Needed from the researcher (before any formal run; not decided here).**
+
+1. Decide what qualifies as a failed or timed-out trial for this experimental
+   setup. Consider what the threshold is actually about: the agent's own
+   pipeline completing at all, versus participant-perceived responsiveness —
+   and how streaming is judged against it, since streaming can hand over first
+   audio early yet finish the whole turn late (time-to-first-audio and
+   total-completion may need to be judged separately).
+2. Justify the chosen value for this setup. Both 10 and 120 are currently
+   unjustified placeholders; neither should win by appearing in a file.
+3. Specify how timed-out trials enter the analysis: counted as failures in the
+   denominator, carried only as a failure category, or excluded — stated in
+   advance, like P-08's drift rule.
+4. Once decided, the effective number must be read from config into the runner
+   *and* stamped by `freeze_experiment` from that same source, so config,
+   `freeze.json` and behaviour cannot disagree again. That wiring is an
+   implementation step and will be done only after the decision. The same fix
+   applies to the dead `asr_failure_wer_threshold` key (currently effective
+   0.5 everywhere by hard-coded default).
+
+---
+
 ## Implementation notes that are not decisions
 
 These were resolved while building, and are recorded here only so the reasoning
