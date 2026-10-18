@@ -556,4 +556,11 @@ def build_provider(config) -> _BaseProvider:
         for key in ("api_key_env", "base_url", "api_key_fallback", "fixed_reply", "plan"):
             if key in provider_section:
                 kwargs[key] = provider_section[key]
+    # Top-level llm.* keys are the override surface for `--set llm.base_url=...`,
+    # cfg.set(...) in the scripts, and NBVA_LLM__* env vars, so they win over the
+    # packaged per-provider section.
+    if section.get("base_url"):
+        kwargs["base_url"] = section["base_url"]
+    if section.get("timeout") is not None:
+        kwargs["timeout"] = float(section["timeout"])
     return cls(model=str(section.get("model", "unknown")), **kwargs)
