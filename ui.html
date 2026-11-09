@@ -39,7 +39,7 @@
   const base = () => (api.value || '').trim().replace(/\/$/, '');
   const sessionId = localStorage.getItem('nbva_call_id') || `web-${Date.now()}`;
   localStorage.setItem('nbva_call_id', sessionId);
-  let listening = false, recognition = null, busy = false, speaking = false, speechRun = 0, audio = null;
+  let listening = false, recognition = null, recognitionHandled = false, lastTranscript = '', lastTranscriptAt = 0, busy = false, speaking = false, speechRun = 0, audio = null;
   const setState = (label, cls='') => { state.textContent = label; state.className = `state ${cls}`; wave.className = `wave ${cls}`; };
   const add = (kind, content) => { const el=document.createElement('div'); el.className=`bubble ${kind}`; el.textContent=content; messages.appendChild(el); messages.scrollTop=messages.scrollHeight; };
   const stopSpeaking = () => {
@@ -86,9 +86,16 @@
   function startRecognition() {
     const API=window.SpeechRecognition||window.webkitSpeechRecognition;
     if (!API) { setState('Type your message','busy'); text.focus(); return; }
-    recognition=new API(); recognition.lang='ar-EG'; recognition.interimResults=false; recognition.continuous=false;
+    recognition=new API(); recognition.lang='ar-EG'; recognition.interimResults=false; recognition.continuous=false; recognitionHandled=false;
     recognition.onstart=()=>{listening=true; call.classList.add('active'); setState('Listening…','live');};
-    recognition.onresult=e=>{const value=e.results[0][0].transcript; text.value=value; send(value);};
+    recognition.onresult=e=>{
+      if (recognitionHandled) return;
+      recognitionHandled=true;
+      const value=e.results[0][0].transcript.trim();
+      const now=Date.now();
+      if (!value || (value===lastTranscript && now-lastTranscriptAt<2500)) return;
+      lastTranscript=value; lastTranscriptAt=now; text.value=value; send(value);
+    };
     recognition.onerror=e=>{setState(`Microphone: ${e.error}`,'error'); listening=false; call.classList.remove('active');};
     recognition.onend=()=>{listening=false; call.classList.remove('active'); if(!busy) setState('Connected','live');};
     recognition.start();
