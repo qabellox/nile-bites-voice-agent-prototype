@@ -274,6 +274,43 @@ develop and test the instrument and is explicitly not the research task set.
 Captured audio, logs and trial data are gitignored. Raw participant speech and
 trial records do not belong in version control.
 
+### Demonstration phone prototype
+
+The existing pipeline can also run behind a local HTTP server suitable for a
+mobile-phone demonstration. The server keeps a live `Session` per phone call,
+restores recent caller dialogue from a local SQLite memory file, and exposes
+the same grounded business tools used by the research instrument:
+
+```powershell
+$env:PYTHONPATH = "src"
+python scripts/phone_server.py --set llm.provider=openai_compatible
+```
+
+The server loads credentials from `NBVA_ENV_FILE` or the user's private
+`~/.env` file. The current local setup uses OpenRouter with a tool-capable
+model selected outside the repository; the API key is never written to source
+control or returned by the health endpoint.
+
+For a local text demonstration, send JSON to `/api/chat`:
+
+```powershell
+curl.exe -X POST http://127.0.0.1:5000/api/chat `
+  -H "Content-Type: application/json" `
+  -d '{"call_id":"demo","caller_id":"demo","text":"عندكم برجر؟"}'
+```
+
+For a Twilio demonstration, expose the server through an HTTPS tunnel or
+deploy it to a public HTTPS host, then set the phone number's Voice webhook to
+`POST /twilio/voice`. Twilio posts speech transcripts to `POST /twilio/gather`;
+the bridge returns TwiML that asks for the next utterance. Configure the LLM
+endpoint and credentials through environment variables or a private config
+override; secrets are never committed to this repository.
+
+This bridge is a prototype integration boundary, not formal research
+instrumentation. The fictional restaurant, synthetic/pilot material, and
+development logs remain non-research data until the researcher approves the
+open methodological decisions.
+
 ---
 
 ## Project boundaries

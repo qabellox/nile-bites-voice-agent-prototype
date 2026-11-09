@@ -1,43 +1,73 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nile Bites Voice Agent</title>
-    <style>
-        body {font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f0f0f0;}
-        .button {padding: 20px 40px; font-size: 24px; cursor: pointer; border: 2px solid #4CAF50; border-radius: 10px; background: #4CAF50; color: white; margin: 20px;}
-        .button.recording {border-color: #f44336; background: #f44336; box-shadow: 0 0 20px #f44336;}
-        .status {padding: 10px; margin: 20px 0; background: #fff; border-radius: 5px; display: inline-block; min-width: 150px;}
-        .log {background: #f8f8f8; padding: 10px; border-radius: 5px; margin: 10px 0; max-height: 300px; overflow-y: auto; font-family: monospace;}
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#090d18">
+  <title>Nile Bites | Voice line</title>
+  <style>
+    :root{font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:#f8fafc;background:#090d18}
+    *{box-sizing:border-box} body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 20%,#263760 0,#11182d 36%,#090d18 72%);display:grid;place-items:center}
+    .phone{width:min(100%,430px);min-height:100vh;padding:28px 20px 24px;display:flex;flex-direction:column}
+    .top{display:flex;justify-content:space-between;color:#aab7d4;font-size:13px}.brand{text-align:center;margin-top:44px}
+    .avatar{width:88px;height:88px;border-radius:28px;margin:auto;display:grid;place-items:center;background:linear-gradient(135deg,#35d0ba,#6375ff);font-size:38px;box-shadow:0 12px 40px #2b6fbd66}
+    h1{font-size:27px;margin:18px 0 5px}.sub{color:#aab7d4}.state{margin:25px auto 18px;padding:8px 14px;border:1px solid #ffffff1a;border-radius:999px;background:#ffffff0b;color:#cdd7ee;font-size:13px}
+    .state.live{color:#6ff0c6;border-color:#32d5ad66}.state.busy{color:#ffd47d}.state.error{color:#ff9b9b}
+    .wave{height:74px;display:flex;align-items:center;justify-content:center;gap:5px;margin:10px 0 18px}.bar{width:4px;height:18px;border-radius:5px;background:#506182}.live .bar{background:#45d7ba;animation:pulse 850ms ease-in-out infinite alternate}.bar:nth-child(2){animation-delay:80ms}.bar:nth-child(3){animation-delay:160ms}.bar:nth-child(4){animation-delay:240ms}.bar:nth-child(5){animation-delay:320ms}
+    @keyframes pulse{to{height:58px}} .messages{flex:1;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:8px 0 18px}.bubble{max-width:88%;padding:12px 15px;border-radius:18px;line-height:1.45;white-space:pre-wrap}.user{align-self:flex-end;background:#4d68d8}.agent{align-self:flex-start;background:#ffffff12;color:#e5eaf7}.meta{font-size:11px;color:#8e9bb8;margin:2px 6px}
+    .controls{display:flex;gap:12px;align-items:center}.call{width:72px;height:72px;border:0;border-radius:50%;background:#32d5ad;color:#061a17;font-size:28px;cursor:pointer;box-shadow:0 8px 30px #32d5ad55}.call.active{background:#fb6474;color:#fff}.call:disabled{opacity:.55;cursor:wait}
+    input{flex:1;border:1px solid #ffffff1c;background:#ffffff0d;color:#fff;border-radius:18px;padding:15px;font-size:15px;outline:none}input::placeholder{color:#8190ad}.hint{text-align:center;color:#8390aa;font-size:12px;margin-top:13px}
+    .config{margin-top:16px;display:flex;gap:7px}.config input{font-size:12px;padding:9px}.config button{background:#ffffff12;color:#cfd8ec;border:1px solid #ffffff1c;border-radius:10px;padding:0 10px}
+  </style>
 </head>
 <body>
-    <h1>Nile Bites Voice Agent</h1>
-    <div class="status" id="status">Ready</div>
-    <div class="log" id="log">Ready</div>
-    <button class="button" id="talkBtn" onclick="startStop()">TALK</button>
-    <div class="log" id="transcript">ASR Transcript: Waiting...</div>
-    <div class="log" id="response">Agent Response: Waiting...</div>
-    <script>
-        function updateStatus(t) {document.getElementById('status').innerText = t;}
-        function updateTranscript(t) {document.getElementById('transcript').innerText = 'ASR Transcript: ' + t;}
-        function updateResponse(t) {document.getElementById('response').innerText = 'Agent Response: ' + t;}
-        function showAlert(t) {alert('Agent Response: ' + t);}
-        function startStop() {
-            var btn = document.getElementById('talkBtn');
-            if (!btn.classList.contains('recording')) {
-                btn.classList.add('recording');
-                updateStatus('Listening');
-                fetch('/record', {method: 'POST', body: 'duration=5'}).then(function(r) {return r.json();}).then(function(data) {
-                    updateStatus('Speaking');
-                    updateTranscript(data.transcript || 'No transcript');
-                    updateResponse(data.response || 'No response');
-                    showAlert(data.response || 'No response');
-                    btn.classList.remove('recording');
-                }).catch(function(e) {updateStatus('Error: ' + e.message); btn.classList.remove('recording');});
-            }
-        }
-    </script>
+<main class="phone">
+  <div class="top"><span id="clock">NILE BITES</span><span>VOICE LINE</span></div>
+  <section class="brand"><div class="avatar">NB</div><h1>Nile Bites</h1><div class="sub">Egyptian restaurant assistant</div><div id="state" class="state">Ready to call</div></section>
+  <div id="wave" class="wave" aria-hidden="true"><i class="bar"></i><i class="bar"></i><i class="bar"></i><i class="bar"></i><i class="bar"></i></div>
+  <section id="messages" class="messages" aria-live="polite"><div class="meta">Your conversation is private to this demo session.</div></section>
+  <div class="controls"><input id="text" type="text" placeholder="Type English or مصري عربي..." autocomplete="off"><button id="call" class="call" aria-label="Start call">☎</button></div>
+  <div class="hint">Tap the phone to start/stop listening. You can always type.</div>
+  <div class="config"><input id="api" aria-label="Agent API URL" placeholder="Agent API URL (optional)"><button id="save">Save</button></div>
+</main>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const api = $('api'), call = $('call'), text = $('text'), state = $('state'), wave = $('wave'), messages = $('messages');
+  const stored = localStorage.getItem('nbva_api_base') || window.NBVA_API_BASE || '';
+  api.value = stored;
+  const base = () => (api.value || '').trim().replace(/\/$/, '');
+  const sessionId = localStorage.getItem('nbva_call_id') || `web-${Date.now()}`;
+  localStorage.setItem('nbva_call_id', sessionId);
+  let listening = false, recognition = null, busy = false;
+  const setState = (label, cls='') => { state.textContent = label; state.className = `state ${cls}`; wave.className = `wave ${cls}`; };
+  const add = (kind, content) => { const el=document.createElement('div'); el.className=`bubble ${kind}`; el.textContent=content; messages.appendChild(el); messages.scrollTop=messages.scrollHeight; };
+  const speak = content => { if ('speechSynthesis' in window) { speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(content); u.lang=/[\u0600-\u06ff]/.test(content)?'ar-EG':'en-US'; u.rate=.95; speechSynthesis.speak(u); } };
+  async function send(content) {
+    if (busy || !content.trim()) return;
+    busy=true; call.disabled=true; add('user',content); setState('Connecting…','busy');
+    try {
+      const response=await fetch(`${base()}/api/chat`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({call_id:sessionId,caller_id:sessionId,text:content})});
+      const data=await response.json(); if (!response.ok || !data.ok) throw new Error(data.error || 'Agent request failed');
+      const answer=data.response || 'معلش، ماقدرتش أطلع رد دلوقتي. ممكن تقولها تاني؟'; add('agent',answer); speak(answer); setState('Connected','live');
+    } catch (error) { add('agent',`Connection error: ${error.message}`); setState('Connection error','error'); }
+    finally { busy=false; call.disabled=false; }
+  }
+  function startRecognition() {
+    const API=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if (!API) { setState('Type your message','busy'); text.focus(); return; }
+    recognition=new API(); recognition.lang='ar-EG'; recognition.interimResults=false; recognition.continuous=false;
+    recognition.onstart=()=>{listening=true; call.classList.add('active'); setState('Listening…','live');};
+    recognition.onresult=e=>{const value=e.results[0][0].transcript; text.value=value; send(value);};
+    recognition.onerror=e=>{setState(`Microphone: ${e.error}`,'error'); listening=false; call.classList.remove('active');};
+    recognition.onend=()=>{listening=false; call.classList.remove('active'); if(!busy) setState('Connected','live');};
+    recognition.start();
+  }
+  call.onclick=()=>{ if(listening){recognition.stop();return;} if(!busy) startRecognition(); };
+  text.onkeydown=e=>{if(e.key==='Enter'){const value=text.value;text.value='';send(value);}};
+  $('save').onclick=()=>{localStorage.setItem('nbva_api_base',api.value.trim());setState('API saved','live');};
+  $('clock').textContent=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+})();
+</script>
 </body>
-</html>"""
+</html>

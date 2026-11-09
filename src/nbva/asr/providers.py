@@ -112,8 +112,10 @@ class FasterWhisperProvider:
             return problems, notes
 
         download_root = sub.get("download_root") or None
-        search_roots = [Path(download_root)] if download_root else []
-        search_roots += [
+        # An explicit cache root is an experiment/runtime constraint. Do not
+        # silently discover a model in an unrelated global cache, because that
+        # makes preflight report a different machine state than the run uses.
+        search_roots = [Path(download_root)] if download_root else [
             Path.home() / ".cache" / "huggingface" / "hub",
             Path.home() / ".cache" / "whisper",
         ]
