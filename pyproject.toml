@@ -19,6 +19,7 @@ dependencies = [
     "flask>=3.0",
     "openai>=1.30",
     "edge-tts>=6.1",
+    "elevenlabs>=2.77",
 ]
 
 [project.optional-dependencies]

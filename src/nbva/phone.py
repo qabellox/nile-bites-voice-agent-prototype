@@ -9,11 +9,10 @@ LLM tool use, order state, logging, and language behaviour.
 from __future__ import annotations
 
 import html
+import io
 import sqlite3
-import tempfile
 import threading
-from urllib.parse import quote
-from urllib.request import Request as UrlRequest, urlopen
+import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -221,23 +220,38 @@ def create_phone_app(
         text = str(body.get("text") or "").strip()
         if not text:
             return jsonify({"ok": False, "error": "speech text is empty"}), 400
-        # Keep one voice across mixed Arabic/English replies; switching the
-        # browser or service voice mid-call is more distracting than an
-        # English loanword retaining the Arabic speaker's delivery.
-        language = "ar"
-        path = Path(tempfile.mkstemp(suffix=".mp3", dir="/tmp")[1])
         try:
-            url = (
-                "https://translate.google.com/translate_tts"
-                f"?ie=UTF-8&tl={language}&client=tw-ob&q={quote(text)}"
+            from elevenlabs import ElevenLabs, VoiceSettings
+
+            api_key = os.environ.get("ELEVENLABS_API_KEY", "").strip()
+            if not api_key:
+                raise RuntimeError("ELEVENLABS_API_KEY is not configured")
+            client = ElevenLabs(api_key=api_key)
+            audio = client.text_to_speech.convert(
+                voice_id=os.environ.get(
+                    "ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnSDxMaL"
+                ),
+                text=text,
+                model_id="eleven_multilingual_v2",
+                output_format="mp3_44100_128",
+                voice_settings=VoiceSettings(
+                    stability=0.42,
+                    similarity_boost=0.78,
+                    style=0.38,
+                    use_speaker_boost=True,
+                ),
             )
-            speech_request = UrlRequest(url, headers={"User-Agent": "Mozilla/5.0"})
-            with urlopen(speech_request, timeout=20) as response:
-                path.write_bytes(response.read())
-            return send_file(path, mimetype="audio/mpeg", as_attachment=False, download_name="reply.mp3")
+            payload = b"".join(audio)
+            if not payload:
+                raise RuntimeError("ElevenLabs returned empty audio")
+            return send_file(
+                io.BytesIO(payload),
+                mimetype="audio/mpeg",
+                as_attachment=False,
+                download_name="reply.mp3",
+            )
         except Exception as exc:
-            path.unlink(missing_ok=True)
-            return jsonify({"ok": False, "error": f"TTS failed: {exc}"}), 502
+            return jsonify({"ok": False, "error": f"ElevenLabs TTS failed: {exc}"}), 502
 
     @app.post("/twilio/voice")
     def twilio_voice() -> Response:
