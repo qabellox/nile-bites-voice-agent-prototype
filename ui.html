@@ -14,8 +14,8 @@
     h1{font-size:27px;margin:18px 0 5px}.sub{color:#aab7d4}.state{margin:25px auto 18px;padding:8px 14px;border:1px solid #ffffff1a;border-radius:999px;background:#ffffff0b;color:#cdd7ee;font-size:13px}
     .state.live{color:#6ff0c6;border-color:#32d5ad66}.state.busy{color:#ffd47d}.state.error{color:#ff9b9b}
     .wave{height:74px;display:flex;align-items:center;justify-content:center;gap:5px;margin:10px 0 18px}.bar{width:4px;height:18px;border-radius:5px;background:#506182}.live .bar{background:#45d7ba;animation:pulse 850ms ease-in-out infinite alternate}.bar:nth-child(2){animation-delay:80ms}.bar:nth-child(3){animation-delay:160ms}.bar:nth-child(4){animation-delay:240ms}.bar:nth-child(5){animation-delay:320ms}
-    @keyframes pulse{to{height:58px}} .messages{flex:1;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:8px 0 18px}.bubble{max-width:88%;padding:12px 15px;border-radius:18px;line-height:1.45;white-space:pre-wrap}.user{align-self:flex-end;background:#4d68d8}.agent{align-self:flex-start;background:#ffffff12;color:#e5eaf7}.meta{font-size:11px;color:#8e9bb8;margin:2px 6px}
-    .controls{display:flex;gap:12px;align-items:center}.call{width:72px;height:72px;border:0;border-radius:50%;background:#32d5ad;color:#061a17;font-size:28px;cursor:pointer;box-shadow:0 8px 30px #32d5ad55}.call.active{background:#fb6474;color:#fff}.call:disabled{opacity:.55;cursor:wait}
+    @keyframes pulse{to{height:58px}} .messages{display:none}.bubble{max-width:88%;padding:12px 15px;border-radius:18px;line-height:1.45;white-space:pre-wrap}.user{align-self:flex-end;background:#4d68d8}.agent{align-self:flex-start;background:#ffffff12;color:#e5eaf7}.meta{font-size:11px;color:#8e9bb8;margin:2px 6px}
+    .controls{display:flex;justify-content:center;gap:12px;align-items:center}.controls input{display:none}.call{width:82px;height:82px;border:0;border-radius:50%;background:#32d5ad;color:#061a17;font-size:30px;cursor:pointer;box-shadow:0 8px 30px #32d5ad55}.call.active{background:#fb6474;color:#fff}.call:disabled{opacity:.55;cursor:wait}
     input{flex:1;border:1px solid #ffffff1c;background:#ffffff0d;color:#fff;border-radius:18px;padding:15px;font-size:15px;outline:none}input::placeholder{color:#8190ad}.hint{text-align:center;color:#8390aa;font-size:12px;margin-top:13px}
     .config{margin-top:16px;display:flex;gap:7px}.config input{font-size:12px;padding:9px}.config button{background:#ffffff12;color:#cfd8ec;border:1px solid #ffffff1c;border-radius:10px;padding:0 10px}
   </style>
@@ -25,9 +25,9 @@
   <div class="top"><span id="clock">NILE BITES</span><span>VOICE LINE</span></div>
   <section class="brand"><div class="avatar">NB</div><h1>Nile Bites</h1><div class="sub">Egyptian restaurant assistant</div><div id="state" class="state">Ready to call</div></section>
   <div id="wave" class="wave" aria-hidden="true"><i class="bar"></i><i class="bar"></i><i class="bar"></i><i class="bar"></i><i class="bar"></i></div>
-  <section id="messages" class="messages" aria-live="polite"><div class="meta">Your conversation is private to this demo session.</div></section>
+  <section id="messages" class="messages" aria-live="polite" aria-hidden="true"></section>
   <div class="controls"><input id="text" type="text" placeholder="Type English or مصري عربي..." autocomplete="off"><button id="call" class="call" aria-label="Start call">☎</button></div>
-  <div class="hint">Tap the phone to start/stop listening. You can always type.</div>
+  <div class="hint">Tap the phone to start or stop the voice call.</div>
   <div class="config"><input id="api" aria-label="Agent API URL" placeholder="Agent API URL (optional)"><button id="save">Save</button></div>
 </main>
 <script>
