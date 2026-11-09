@@ -66,16 +66,9 @@
       audio.onended = () => { speaking = false; audio = null; };
       await audio.play();
     } catch (error) {
-      if (run === speechRun && 'speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(content);
-        utterance.lang = /[\u0600-\u06ff]/.test(content) ? 'ar-EG' : 'en-US';
-        const voice = chooseVoice(utterance.lang);
-        if (voice) utterance.voice = voice;
-        utterance.rate = .9; utterance.pitch = 1.05;
-        utterance.onend = () => { speaking = false; };
-        speechSynthesis.speak(utterance);
-      } else {
+      if (run === speechRun) {
         speaking = false;
+        setState('Audio unavailable — use text', 'error');
       }
     }
   };

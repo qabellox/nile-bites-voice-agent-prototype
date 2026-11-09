@@ -221,7 +221,10 @@ def create_phone_app(
         text = str(body.get("text") or "").strip()
         if not text:
             return jsonify({"ok": False, "error": "speech text is empty"}), 400
-        language = "ar" if any("\u0600" <= char <= "\u06ff" for char in text) else "en"
+        # Keep one voice across mixed Arabic/English replies; switching the
+        # browser or service voice mid-call is more distracting than an
+        # English loanword retaining the Arabic speaker's delivery.
+        language = "ar"
         path = Path(tempfile.mkstemp(suffix=".mp3", dir="/tmp")[1])
         try:
             url = (
