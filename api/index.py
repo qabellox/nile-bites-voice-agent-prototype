@@ -16,6 +16,8 @@ from nbva.phone import create_phone_app
 config = load_config()
 config.set("paths.log_dir", "/tmp/nbva-logs")
 config.set("logging.audio_dir", "/tmp/nbva-audio")
+config.set("llm.max_tokens", 240)
+config.set("llm.timeout_seconds", 35)
 if os.environ.get("OPENAI_MODEL"):
     config.set("llm.model", os.environ["OPENAI_MODEL"])
 if os.environ.get("OPENAI_BASE_URL"):
