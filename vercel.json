@@ -1,7 +1,11 @@
 {
   "version": 2,
-  "builds": [{ "src": "ui.html", "use": "@vercel/static" }],
+  "builds": [
+    { "src": "api/index.py", "use": "@vercel/python" },
+    { "src": "ui.html", "use": "@vercel/static" }
+  ],
   "routes": [
+    { "src": "/(api|healthz|twilio)(/.*)?", "dest": "/api/index.py" },
     { "src": "/", "dest": "/ui.html" },
     { "handle": "filesystem" }
   ],

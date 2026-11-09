@@ -16,6 +16,8 @@ dependencies = [
     "numpy>=1.26",
     "sounddevice>=0.4.6",
     "soundfile>=0.12",
+    "flask>=3.0",
+    "openai>=1.30",
 ]
 
 [project.optional-dependencies]
