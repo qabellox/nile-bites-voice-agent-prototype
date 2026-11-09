@@ -10,13 +10,16 @@ from __future__ import annotations
 
 import html
 import sqlite3
+import tempfile
 import threading
+from urllib.parse import quote
+from urllib.request import Request as UrlRequest, urlopen
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from flask import Flask, Response, jsonify, request
+from flask import Flask, Response, jsonify, request, send_file
 
 from .agent.app import AgentApp, build_app
 from .config.loader import Config, load_config
@@ -211,6 +214,27 @@ def create_phone_app(
         except ValueError as exc:
             return jsonify({"ok": False, "error": str(exc)}), 400
         return jsonify({"ok": True, **result})
+
+    @app.post("/api/tts")
+    def tts() -> Response:
+        body = request.get_json(silent=True) or {}
+        text = str(body.get("text") or "").strip()
+        if not text:
+            return jsonify({"ok": False, "error": "speech text is empty"}), 400
+        language = "ar" if any("\u0600" <= char <= "\u06ff" for char in text) else "en"
+        path = Path(tempfile.mkstemp(suffix=".mp3", dir="/tmp")[1])
+        try:
+            url = (
+                "https://translate.google.com/translate_tts"
+                f"?ie=UTF-8&tl={language}&client=tw-ob&q={quote(text)}"
+            )
+            speech_request = UrlRequest(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urlopen(speech_request, timeout=20) as response:
+                path.write_bytes(response.read())
+            return send_file(path, mimetype="audio/mpeg", as_attachment=False, download_name="reply.mp3")
+        except Exception as exc:
+            path.unlink(missing_ok=True)
+            return jsonify({"ok": False, "error": f"TTS failed: {exc}"}), 502
 
     @app.post("/twilio/voice")
     def twilio_voice() -> Response:
