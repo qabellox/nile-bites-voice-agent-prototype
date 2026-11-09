@@ -60,3 +60,14 @@ def test_twilio_routes_return_xml(tmp_path: Path):
     assert gather.status_code == 200
     assert voice.content_type.startswith("application/xml")
     assert "<Response>" in gather.get_data(as_text=True)
+
+
+def test_phone_rejects_unrelated_requests_formally(tmp_path: Path):
+    app = create_phone_app(_offline_config(), tmp_path / "memory.sqlite3")
+    response = app.test_client().post(
+        "/api/chat",
+        json={"call_id": "c1", "caller_id": "+201", "text": "هل تقدروا تعملوا صيانة لطائرة؟"},
+    )
+    assert response.status_code == 200
+    assert "حضرتك" in response.json["response"]
+    assert "Nile Bites" in response.json["response"]

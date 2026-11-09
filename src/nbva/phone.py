@@ -28,6 +28,50 @@ def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+_OUT_OF_SCOPE_MARKERS = (
+    "طائرة",
+    "طيارة",
+    "طيران",
+    "صيانة",
+    "airplane",
+    "aircraft",
+    "aviation",
+    "medical",
+    "doctor",
+    "lawyer",
+    "politics",
+    "weather",
+    "python",
+    "coding",
+    "programming",
+    "quantum",
+)
+_RESTAURANT_MARKERS = (
+    "منيو",
+    "قائمة",
+    "أكل",
+    "اكل",
+    "برجر",
+    "بيتزا",
+    "طلب",
+    "طلبات",
+    "توصيل",
+    "سعر",
+    "بكام",
+    "متاح",
+    "مطعم",
+    "menu",
+    "food",
+    "burger",
+    "pizza",
+    "order",
+    "delivery",
+    "price",
+    "available",
+    "restaurant",
+)
+
+
 class ConversationMemory:
     """Small durable transcript memory keyed by caller identity.
 
@@ -126,6 +170,25 @@ class PhoneBridge:
         if not clean_text:
             raise ValueError("speech text is empty")
         session = self.session_for(call_id, caller_id)
+        folded_text = clean_text.casefold()
+        has_arabic = any("\u0600" <= char <= "\u06ff" for char in clean_text)
+        has_context = bool(session.app.session.history)
+        unrelated_arabic = (
+            has_arabic
+            and not has_context
+            and not any(marker in folded_text for marker in _RESTAURANT_MARKERS)
+        )
+        if (
+            any(marker in folded_text for marker in _OUT_OF_SCOPE_MARKERS)
+            or unrelated_arabic
+        ):
+            response = (
+                "حضرتك، أقدر أساعد حضرتك في المنيو والطلبات والتوصيل الخاص بـ "
+                "Nile Bites فقط."
+            )
+            self.memory.append(caller_id, "user", clean_text)
+            self.memory.append(caller_id, "assistant", response)
+            return {"response": response, "turn": {}, "state": None, "session": session.app.describe()}
         result = session.app.pipeline.process_turn(text=clean_text, speak=False)
         session.app.logger.log_turn(result.turn)
         self.memory.append(caller_id, "user", clean_text)
