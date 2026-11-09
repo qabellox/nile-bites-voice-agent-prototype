@@ -191,10 +191,16 @@ class PhoneBridge:
             return {"response": response, "turn": {}, "state": None, "session": session.app.describe()}
         result = session.app.pipeline.process_turn(text=clean_text, speak=False)
         session.app.logger.log_turn(result.turn)
+        response_text = result.response_text.strip()
+        if result.error or not response_text:
+            response_text = (
+                "حضرتك، حصل عطل مؤقت في خدمة الرد. "
+                "ممكن حضرتك تعيد السؤال بعد لحظات؟"
+            )
         self.memory.append(caller_id, "user", clean_text)
-        self.memory.append(caller_id, "assistant", result.response_text)
+        self.memory.append(caller_id, "assistant", response_text)
         return {
-            "response": result.response_text,
+            "response": response_text,
             "turn": result.turn.to_dict(),
             "state": result.final_state,
             "session": session.app.describe(),
