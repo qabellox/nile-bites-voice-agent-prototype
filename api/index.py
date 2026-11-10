@@ -19,7 +19,10 @@ config.set("logging.audio_dir", "/tmp/nbva-audio")
 config.set("llm.max_tokens", 360)
 config.set("llm.temperature", 0.25)
 config.set("llm.timeout_seconds", 35)
-config.set("llm.model", os.environ.get("OPENAI_MODEL", "openai/gpt-4.1-mini"))
+config.set(
+    "llm.model",
+    os.environ.get("OPENAI_MODEL", "nvidia/nemotron-3.5-lightning:free"),
+)
 if os.environ.get("OPENAI_BASE_URL"):
     config.set("llm.base_url", os.environ["OPENAI_BASE_URL"])
     config.set("llm.openai_compatible.base_url", os.environ["OPENAI_BASE_URL"])

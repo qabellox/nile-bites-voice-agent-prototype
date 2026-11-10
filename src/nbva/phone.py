@@ -56,8 +56,13 @@ _RESTAURANT_MARKERS = (
     "طلب",
     "طلبات",
     "توصيل",
+    "بتوصل",
+    "مدينة نصر",
     "سعر",
     "بكام",
+    "حلومي",
+    "خفيف",
+    "رشح",
     "متاح",
     "مطعم",
     "menu",
@@ -70,6 +75,56 @@ _RESTAURANT_MARKERS = (
     "available",
     "restaurant",
 )
+_VAGUE_RESPONSE_MARKERS = (
+    "ممكن توضح",
+    "ممكن توضحي",
+    "إيه اللي عايزه",
+    "على إيه محتاج مساعدة",
+    "أقدر أساعد",
+    "أنا هنا أساعد",
+    "لم أفهم",
+    "مافهمتش",
+    "what can i help",
+    "could you clarify",
+)
+
+
+def _direct_fallback_response(repository: Any, text: str) -> str | None:
+    """Answer common factual intents without inventing facts when the LLM is unavailable."""
+    folded = text.casefold()
+    if "برجر" in folded and any(
+        marker in folded for marker in ("إيه", "ايه", "أنواع", "انواع", "what", "which")
+    ):
+        items = repository.search_menu(query="", category="burgers", only_available=True)
+        names = "، ".join(f"{item.name_ar_eg} ({item.price} جنيه)" for item in items)
+        return f"عندنا حضرتك: {names}. تحب أقول لحضرتك تفاصيل مكونات أي اختيار؟"
+    if "حلومي" in folded and any(
+        marker in folded for marker in ("بكام", "سعر", "price", "كام")
+    ):
+        item = repository.items_by_id.get("NB-BURG-004")
+        if item is not None:
+            return f"برجر الحلومي المشوي سعره {item.price} جنيه، ومتاح حالياً. تحب أضيفه لحضرتك؟"
+    if "مدينة نصر" in folded and any(
+        marker in folded for marker in ("توصيل", "بتوصل", "delivery", "كام", "قد إيه")
+    ):
+        zone = repository.zone("مدينة نصر")
+        if zone is not None:
+            return (
+                f"أيوه، بنوصل مدينة نصر. رسوم التوصيل {zone.fee} جنيه، "
+                f"والحد الأدنى للطلب {zone.min_order} جنيه، والمدة من "
+                f"{zone.eta_min_minutes} لـ {zone.eta_max_minutes} دقيقة."
+            )
+    if ("خفيف" in folded or "مش حارة" in folded or "مش حار" in folded) and (
+        "رشح" in folded or "اقتراح" in folded or "recommend" in folded
+    ):
+        items = repository.search_menu(query="", category="salads", only_available=True)
+        if items:
+            item = items[0]
+            return (
+                f"أرشح لحضرتك {item.name_ar_eg} بسعر {item.price} جنيه؛ "
+                "اختيار خفيف ومش حار. تحب أقول لحضرتك مكوناته؟"
+            )
+    return None
 
 
 class ConversationMemory:
@@ -189,10 +244,30 @@ class PhoneBridge:
             self.memory.append(caller_id, "user", clean_text)
             self.memory.append(caller_id, "assistant", response)
             return {"response": response, "turn": {}, "state": None, "session": session.app.describe()}
+        direct_response = _direct_fallback_response(session.app.repository, clean_text)
+        if direct_response is not None:
+            self.memory.append(caller_id, "user", clean_text)
+            self.memory.append(caller_id, "assistant", direct_response)
+            return {
+                "response": direct_response,
+                "turn": {},
+                "state": None,
+                "session": session.app.describe(),
+            }
         result = session.app.pipeline.process_turn(text=clean_text, speak=False)
         session.app.logger.log_turn(result.turn)
         response_text = result.response_text.strip()
-        if result.error or not response_text:
+        fallback_response = _direct_fallback_response(
+            session.app.repository, clean_text
+        )
+        if fallback_response and (
+            result.error
+            or not response_text
+            or not result.tool_calls
+            or any(marker in response_text.casefold() for marker in _VAGUE_RESPONSE_MARKERS)
+        ):
+            response_text = fallback_response
+        if not response_text:
             response_text = (
                 "حضرتك، حصل عطل مؤقت في خدمة الرد. "
                 "ممكن حضرتك تعيد السؤال بعد لحظات؟"

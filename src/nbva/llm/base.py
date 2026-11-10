@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 import json
+import time
 
 from ..tools.registry import ToolRegistry
 
@@ -67,10 +68,34 @@ def run_tool_loop(
     error: str | None = None
 
     for _ in range(max(1, max_iterations)):
-        try:
-            response = provider.complete(convo, registry.llm_schemas())
-        except Exception as exc:  # provider failure must not kill the session
-            return "", convo, registry.take_calls(), f"{type(exc).__name__}: {exc}"
+        response = None
+        last_exception: Exception | None = None
+        for attempt in range(3):
+            try:
+                response = provider.complete(convo, registry.llm_schemas())
+                break
+            except Exception as exc:  # provider failure must not kill the session
+                last_exception = exc
+                message = str(exc).lower()
+                transient = (
+                    "429" in message
+                    or "rate limit" in message
+                    or "too many requests" in message
+                    or "timeout" in message
+                    or "temporarily unavailable" in message
+                    or " 500" in message
+                    or " 502" in message
+                    or " 503" in message
+                    or " 504" in message
+                )
+                if not transient or attempt == 2:
+                    break
+                time.sleep(1.0 * (attempt + 1))
+        if response is None:
+            assert last_exception is not None
+            return "", convo, registry.take_calls(), (
+                f"{type(last_exception).__name__}: {last_exception}"
+            )
 
         if response.error:
             return response.text, convo, registry.take_calls(), response.error
