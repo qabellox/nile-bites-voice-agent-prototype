@@ -16,10 +16,10 @@ from nbva.phone import create_phone_app
 config = load_config()
 config.set("paths.log_dir", "/tmp/nbva-logs")
 config.set("logging.audio_dir", "/tmp/nbva-audio")
-config.set("llm.max_tokens", 240)
+config.set("llm.max_tokens", 360)
+config.set("llm.temperature", 0.25)
 config.set("llm.timeout_seconds", 35)
-if os.environ.get("OPENAI_MODEL"):
-    config.set("llm.model", os.environ["OPENAI_MODEL"])
+config.set("llm.model", os.environ.get("OPENAI_MODEL", "openai/gpt-4.1-mini"))
 if os.environ.get("OPENAI_BASE_URL"):
     config.set("llm.base_url", os.environ["OPENAI_BASE_URL"])
     config.set("llm.openai_compatible.base_url", os.environ["OPENAI_BASE_URL"])

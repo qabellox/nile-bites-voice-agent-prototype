@@ -39,7 +39,7 @@
   const base = () => (api.value || '').trim().replace(/\/$/, '');
   const sessionId = localStorage.getItem('nbva_call_id') || `web-${Date.now()}`;
   localStorage.setItem('nbva_call_id', sessionId);
-  let listening = false, recognition = null, recognitionHandled = false, lastTranscript = '', lastTranscriptAt = 0, busy = false, speaking = false, speechRun = 0, audio = null;
+  let listening = false, recognition = null, recognitionHandled = false, lastTranscript = '', lastTranscriptAt = 0, busy = false, speaking = false, speechRun = 0, audio = null, welcomeAudio = null, welcomePlayed = false;
   const setState = (label, cls='') => { state.textContent = label; state.className = `state ${cls}`; wave.className = `wave ${cls}`; };
   const add = (kind, content) => { const el=document.createElement('div'); el.className=`bubble ${kind}`; el.textContent=content; messages.appendChild(el); messages.scrollTop=messages.scrollHeight; };
   const stopSpeaking = () => {
@@ -72,7 +72,31 @@
       }
     }
   };
+  const prepareWelcome = async () => {
+    try {
+      const response = await fetch(`${base()}/api/tts`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text:'أهلاً بحضرتك، حضرتك بتكلم خدمة عملاء Nile Bites. تحت أمرك.'})});
+      if (!response.ok) return;
+      welcomeAudio = URL.createObjectURL(await response.blob());
+      const preview = new Audio(welcomeAudio);
+      preview.onended = () => { welcomePlayed = true; };
+      await preview.play();
+      welcomePlayed = true;
+    } catch (error) {
+      // Browsers commonly block autoplay; the first phone-button tap retries it.
+    }
+  };
+  const playWelcome = async () => {
+    if (welcomePlayed) return true;
+    if (!welcomeAudio) await prepareWelcome();
+    if (!welcomeAudio) return false;
+    stopSpeaking();
+    const greeting = new Audio(welcomeAudio);
+    speaking = true;
+    greeting.onended = () => { speaking = false; welcomePlayed = true; };
+    try { await greeting.play(); return true; } catch (error) { speaking = false; return false; }
+  };
   if ('speechSynthesis' in window) speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+  prepareWelcome();
   async function send(content) {
     if (busy || !content.trim()) return;
     stopSpeaking(); busy=true; add('user',content); setState('Connecting…','busy');
@@ -102,6 +126,7 @@
   }
   call.onclick=()=>{
     if (speaking) stopSpeaking();
+    if (!welcomePlayed) { playWelcome(); return; }
     if (listening) { recognition.stop(); return; }
     if (!busy) startRecognition();
   };
