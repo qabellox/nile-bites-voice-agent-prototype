@@ -98,21 +98,21 @@ def _direct_fallback_response(repository: Any, text: str) -> str | None:
         items = repository.search_menu(query="", category="burgers", only_available=True)
         names = "، ".join(f"{item.name_ar_eg} ({item.price} جنيه)" for item in items)
         return f"عندنا حضرتك: {names}. تحب أقول لحضرتك تفاصيل مكونات أي اختيار؟"
-    if "حلومي" in folded and any(
+    if ("حلومي" in folded or "حلوم" in folded) and any(
         marker in folded for marker in ("بكام", "سعر", "price", "كام")
     ):
         item = repository.items_by_id.get("NB-BURG-004")
         if item is not None:
-            return f"برجر الحلومي المشوي سعره {item.price} جنيه، ومتاح حالياً. تحب أضيفه لحضرتك؟"
+            return "برجر الحلومي المشوي سعره مية وخمسة وسبعين جنيه، ومتاح حالياً. تحب أضيفه لحضرتك؟"
     if "مدينة نصر" in folded and any(
         marker in folded for marker in ("توصيل", "بتوصل", "delivery", "كام", "قد إيه")
     ):
         zone = repository.zone("مدينة نصر")
         if zone is not None:
             return (
-                f"أيوه، بنوصل مدينة نصر. رسوم التوصيل {zone.fee} جنيه، "
-                f"والحد الأدنى للطلب {zone.min_order} جنيه، والمدة من "
-                f"{zone.eta_min_minutes} لـ {zone.eta_max_minutes} دقيقة."
+                "أيوه، بنوصل مدينة نصر. رسوم التوصيل خمسة وعشرين جنيه، "
+                "والحد الأدنى للطلب مية وعشرين جنيه، والمدة من "
+                "خمسة وتلاتين لخمسين دقيقة."
             )
     if ("خفيف" in folded or "مش حارة" in folded or "مش حار" in folded) and (
         "رشح" in folded or "اقتراح" in folded or "recommend" in folded
@@ -125,6 +125,14 @@ def _direct_fallback_response(repository: Any, text: str) -> str | None:
                 "اختيار خفيف ومش حار. تحب أقول لحضرتك مكوناته؟"
             )
     return None
+
+
+def _arabic_safe_clarification(text: str) -> str:
+    if "سعر" in text or "بكام" in text or "كام" in text:
+        return "حضرتك، ممكن تقول اسم الصنف اللي عايز تعرف سعره؟"
+    if "منيو" in text or "قائمة" in text or "أكل" in text:
+        return "حضرتك، تحب تشوف البرجر، الساندوتشات، المشاوي، ولا المشروبات؟"
+    return "حضرتك، ممكن توضح طلبك؟ أقدر أساعد حضرتك في المنيو، الأسعار، الطلبات، والتوصيل."
 
 
 class ConversationMemory:
@@ -227,7 +235,9 @@ class PhoneBridge:
         session = self.session_for(call_id, caller_id)
         folded_text = clean_text.casefold()
         has_arabic = any("\u0600" <= char <= "\u06ff" for char in clean_text)
-        has_context = bool(session.app.session.history)
+        has_context = bool(session.app.session.history) or bool(
+            self.memory.load(caller_id)
+        )
         unrelated_arabic = (
             has_arabic
             and not has_context
@@ -250,6 +260,16 @@ class PhoneBridge:
             self.memory.append(caller_id, "assistant", direct_response)
             return {
                 "response": direct_response,
+                "turn": {},
+                "state": None,
+                "session": session.app.describe(),
+            }
+        if has_arabic and any(marker in folded_text for marker in _RESTAURANT_MARKERS):
+            safe_response = _arabic_safe_clarification(clean_text)
+            self.memory.append(caller_id, "user", clean_text)
+            self.memory.append(caller_id, "assistant", safe_response)
+            return {
+                "response": safe_response,
                 "turn": {},
                 "state": None,
                 "session": session.app.describe(),
@@ -378,7 +398,7 @@ def create_phone_app(
                     "ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnSDxMaL"
                 ),
                 text=text,
-                model_id="eleven_flash_v2_5",
+                model_id="eleven_multilingual_v2",
                 output_format="mp3_22050_32",
                 voice_settings=VoiceSettings(
                     stability=0.42,
