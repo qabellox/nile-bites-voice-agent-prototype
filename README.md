@@ -311,6 +311,26 @@ instrumentation. The fictional restaurant, synthetic/pilot material, and
 development logs remain non-research data until the researcher approves the
 open methodological decisions.
 
+### Developing from another device
+
+Yes. The source code and deployment configuration are in the public GitHub
+repository, so the project can be continued from another computer:
+
+```powershell
+git clone https://github.com/qabellox/nile-bites-voice-agent-prototype.git
+cd nile-bites-voice-agent-prototype
+pip install -e .
+python -m pytest
+```
+
+The repository does **not** contain API keys, `.env` files, local SQLite memory,
+captured audio, or logs. On a new device, create a private environment file
+with the required provider credentials, or use the existing Vercel project,
+whose production secrets are managed separately from GitHub. Local conversation
+memory is device-local and is not automatically synchronized between machines.
+Changes can be pushed from any device with Git and the appropriate GitHub
+authentication; the Vercel project can then be redeployed from that device.
+
 ---
 
 ## Project boundaries
