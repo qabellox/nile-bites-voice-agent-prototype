@@ -87,6 +87,18 @@ _VAGUE_RESPONSE_MARKERS = (
     "what can i help",
     "could you clarify",
 )
+_QUANTITY_WORDS = {
+    "واحد": 1,
+    "واحدة": 1,
+    "اتنين": 2,
+    "اثنين": 2,
+    "اتنين": 2,
+    "تلاتة": 3,
+    "ثلاثة": 3,
+    "اربعة": 4,
+    "أربعة": 4,
+    "خمسة": 5,
+}
 
 
 def _direct_fallback_response(repository: Any, text: str) -> str | None:
@@ -133,6 +145,97 @@ def _arabic_safe_clarification(text: str) -> str:
     if "منيو" in text or "قائمة" in text or "أكل" in text:
         return "حضرتك، تحب تشوف البرجر، الساندوتشات، المشاوي، ولا المشروبات؟"
     return "حضرتك، ممكن توضح طلبك؟ أقدر أساعد حضرتك في المنيو، الأسعار، الطلبات، والتوصيل."
+
+
+def _quantity_from_text(text: str) -> int:
+    import re
+
+    match = re.search(r"\b([0-9]+)\b", text)
+    if match:
+        return max(1, int(match.group(1)))
+    for word, quantity in _QUANTITY_WORDS.items():
+        if word in text:
+            return quantity
+    return 1
+
+
+def _find_order_item(repository: Any, text: str) -> Any | None:
+    folded = text.casefold()
+    candidates = []
+    for item in repository.menu:
+        names = [item.name_ar_eg, item.name_en, *item.aliases]
+        if any(name.casefold() in folded for name in names if name):
+            candidates.append(item)
+    if candidates:
+        return max(candidates, key=lambda item: len(item.name_ar_eg))
+    if "حلومي" in folded or "حلوم" in folded:
+        return repository.items_by_id.get("NB-BURG-004")
+    return None
+
+
+def _direct_order_response(session: PhoneSession, text: str) -> str | None:
+    folded = text.casefold()
+    order = session.app.session.orders.current_order()
+    if any(marker in folded for marker in ("احسب", "الإجمالي", "الاجمالي", "total")):
+        if order is None:
+            return "حضرتك، لسه مافيش طلب متسجل. تحب تطلب إيه؟"
+        result = session.app.session.tools.dispatch(
+            "calculate_order_total", {"order_id": order.order_id}
+        )
+        total = result.get("breakdown", {}).get("total_egp")
+        return f"إجمالي طلب حضرتك {total} جنيه، شامل التوصيل والخصومات المطبقة."
+    if order is not None and any(
+        marker in folded
+        for marker in ("تمام", "أكد", "اكّد", "ده الأوردر", "هذا الطلب", "confirm")
+    ):
+        result = session.app.session.tools.dispatch(
+            "confirm_order", {"order_id": order.order_id}
+        )
+        if result.get("ok"):
+            return "تمام يا حضرتك، تم تأكيد الطلب. تحت أمرك."
+    if not any(
+        marker in folded
+        for marker in ("عايز", "عاوز", "محتاج", "اطلب", "هات", "add", "order")
+    ):
+        return None
+    item = _find_order_item(session.app.repository, folded)
+    if item is None and order is not None and ("منه" in folded or "منها" in folded):
+        if len(order.lines) == 1:
+            item = session.app.repository.items_by_id.get(order.lines[0].item_id)
+    if item is None:
+        return None
+    quantity = _quantity_from_text(folded)
+    line = {"item": item.id, "quantity": quantity}
+    item_label = item.name_ar_eg
+    zone = None
+    for candidate in session.app.repository.zones():
+        if candidate.name_ar_eg.casefold() in folded or any(
+            alias.casefold() in folded for alias in candidate.aliases
+        ):
+            zone = candidate.id
+            break
+    if order is None:
+        result = session.app.session.tools.dispatch(
+            "create_order",
+            {"lines": [line], "order_mode": "delivery", "zone": zone},
+        )
+    else:
+        result = session.app.session.tools.dispatch(
+            "modify_order", {"order_id": order.order_id, "add": [line]}
+        )
+    if not result.get("ok"):
+        if result.get("error") == "UNKNOWN_ZONE":
+            return (
+                f"تمام يا حضرتك، فهمت إنك عايز {quantity} من {item_label}. "
+                "علشان أكمّل طلب التوصيل، محتاج أعرف المنطقة."
+            )
+        return "حضرتك، حصلت مشكلة وأنا بسجل الطلب. ممكن نجرب تاني؟"
+    updated = result.get("order") or {}
+    total = updated.get("total")
+    return (
+        f"تمام يا حضرتك، سجلت {quantity} من {item_label}. "
+        f"الإجمالي الحالي {total} جنيه. تحب تضيف حاجة تانية ولا أأكد الطلب؟"
+    )
 
 
 class ConversationMemory:
@@ -254,6 +357,16 @@ class PhoneBridge:
             self.memory.append(caller_id, "user", clean_text)
             self.memory.append(caller_id, "assistant", response)
             return {"response": response, "turn": {}, "state": None, "session": session.app.describe()}
+        direct_order_response = _direct_order_response(session, clean_text)
+        if direct_order_response is not None:
+            self.memory.append(caller_id, "user", clean_text)
+            self.memory.append(caller_id, "assistant", direct_order_response)
+            return {
+                "response": direct_order_response,
+                "turn": {},
+                "state": session.app.session.state_snapshot(),
+                "session": session.app.describe(),
+            }
         direct_response = _direct_fallback_response(session.app.repository, clean_text)
         if direct_response is not None:
             self.memory.append(caller_id, "user", clean_text)

@@ -71,3 +71,28 @@ def test_phone_rejects_unrelated_requests_formally(tmp_path: Path):
     assert response.status_code == 200
     assert "حضرتك" in response.json["response"]
     assert "Nile Bites" in response.json["response"]
+
+
+def test_phone_handles_arabic_order_without_llm_tool_call(tmp_path: Path):
+    app = create_phone_app(_offline_config(), tmp_path / "memory.sqlite3")
+    client = app.test_client()
+    first = client.post(
+        "/api/chat",
+        json={
+            "call_id": "order",
+            "caller_id": "order",
+            "text": "عايز برجر حلومي مشوي في مدينة نصر",
+        },
+    )
+    second = client.post(
+        "/api/chat",
+        json={"call_id": "order", "caller_id": "order", "text": "احسبلي الإجمالي"},
+    )
+    third = client.post(
+        "/api/chat",
+        json={"call_id": "order", "caller_id": "order", "text": "تمام، ده الأوردر بتاعي"},
+    )
+    assert "سجلت" in first.json["response"]
+    assert "200" in first.json["response"]
+    assert "200" in second.json["response"]
+    assert "تم تأكيد الطلب" in third.json["response"]
