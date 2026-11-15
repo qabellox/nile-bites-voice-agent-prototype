@@ -553,11 +553,50 @@ class PhoneBridge:
             self._sessions[call_id] = session
             return session
 
+    def _mandatory_reasoning_pass(
+        self, session: PhoneSession, text: str
+    ) -> None:
+        """Run the configured LLM on every turn without allowing side effects."""
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "Analyze this customer-service turn for intent and relevant "
+                    "menu concepts. Do not invent prices, quantities, or items. "
+                    "This is a mandatory reasoning pass; the application will "
+                    "validate facts and execute orders separately."
+                ),
+            },
+            *session.app.session.message_history()[-8:],
+            {"role": "user", "content": text},
+        ]
+        session.app.llm.complete(messages=messages, tools=None)
+
     def process_text(self, call_id: str, caller_id: str, text: str) -> dict[str, Any]:
         clean_text = str(text or "").strip()
         if not clean_text:
             raise ValueError("speech text is empty")
         session = self.session_for(call_id, caller_id)
+        try:
+            self._mandatory_reasoning_pass(session, clean_text)
+        except Exception as exc:
+            session.app.logger.log_event(
+                "mandatory_llm_reasoning_failed",
+                error_type=type(exc).__name__,
+                error=str(exc),
+            )
+            response = (
+                "حضرتك، خدمة الذكاء الاصطناعي مش متاحة دلوقتي، "
+                "ومش هسجل أي طلب من غير ما أراجع الكلام بأمان. حاول تاني بعد لحظات."
+            )
+            self.memory.append(caller_id, "user", clean_text)
+            self.memory.append(caller_id, "assistant", response)
+            return {
+                "response": response,
+                "turn": {},
+                "state": session.app.session.state_snapshot(),
+                "session": session.app.describe(),
+            }
         folded_text = clean_text.casefold()
         has_arabic = any("\u0600" <= char <= "\u06ff" for char in clean_text)
         has_context = bool(session.app.session.history) or bool(
