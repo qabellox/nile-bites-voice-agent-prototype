@@ -691,7 +691,9 @@ def create_phone_app(
                     "ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnSDxMaL"
                 ),
                 text=text,
-                model_id="eleven_multilingual_v2",
+                model_id=os.environ.get(
+                    "ELEVENLABS_TTS_MODEL", "eleven_flash_v2_5"
+                ),
                 output_format="mp3_22050_32",
                 voice_settings=VoiceSettings(
                     stability=0.42,
