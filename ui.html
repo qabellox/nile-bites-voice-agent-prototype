@@ -55,6 +55,15 @@
     return voices.find(voice => wanted.includes(voice.lang)) ||
       voices.find(voice => wanted.some(prefix => voice.lang.startsWith(prefix))) || null;
   };
+  const speakWithBrowserVoice = content => {
+    if (!('speechSynthesis' in window)) return false;
+    const utterance = new SpeechSynthesisUtterance(content);
+    utterance.lang = /[\u0600-\u06ff]/.test(content) ? 'ar-EG' : 'en-US';
+    const voice = chooseVoice(utterance.lang);
+    if (voice) utterance.voice = voice;
+    speechSynthesis.speak(utterance);
+    return true;
+  };
   const speak = async content => {
     stopSpeaking();
     const run = speechRun;
@@ -68,7 +77,9 @@
     } catch (error) {
       if (run === speechRun) {
         speaking = false;
-        setState('Audio unavailable — use text', 'error');
+        if (!speakWithBrowserVoice(content)) {
+          setState('Audio unavailable — use text', 'error');
+        }
       }
     }
   };

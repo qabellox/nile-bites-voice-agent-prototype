@@ -93,8 +93,8 @@ def test_phone_handles_arabic_order_without_llm_tool_call(tmp_path: Path):
         json={"call_id": "order", "caller_id": "order", "text": "تمام، ده الأوردر بتاعي"},
     )
     assert "سجلت" in first.json["response"]
-    assert "200" in first.json["response"]
-    assert "200" in second.json["response"]
+    assert "ميتين" in first.json["response"]
+    assert "ميتين" in second.json["response"]
     assert "تم تأكيد الطلب" in third.json["response"]
 
 

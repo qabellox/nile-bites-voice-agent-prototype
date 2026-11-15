@@ -110,6 +110,75 @@ _QUANTITY_SPOKEN = {
 }
 
 
+def _spoken_number(value: Any) -> str:
+    """Render common EGP values as Arabic words for more reliable Arabic TTS."""
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        return str(value)
+    if number < 0:
+        return f"سالب {_spoken_number(-number)}"
+    if number < 20:
+        return (
+            "صفر",
+            "واحد",
+            "اتنين",
+            "تلاتة",
+            "أربعة",
+            "خمسة",
+            "ستة",
+            "سبعة",
+            "تمانية",
+            "تسعة",
+            "عشرة",
+            "حداشر",
+            "اتناشر",
+            "تلتاشر",
+            "أربعتاشر",
+            "خمستاشر",
+            "ستاشر",
+            "سبعتاشر",
+            "تمانتاشر",
+            "تسعتاشر",
+        )[number]
+    if number < 100:
+        tens = (
+            "",
+            "",
+            "عشرين",
+            "تلاتين",
+            "أربعين",
+            "خمسين",
+            "ستين",
+            "سبعين",
+            "تمانين",
+            "تسعين",
+        )
+        remainder = number % 10
+        return tens[number // 10] if not remainder else f"{_spoken_number(remainder)} و{tens[number // 10]}"
+    if number < 1000:
+        hundreds = (
+            "",
+            "مية",
+            "ميتين",
+            "تلتمية",
+            "ربعمية",
+            "خمسمية",
+            "ستمية",
+            "سبعمية",
+            "تمانية مية",
+            "تسعمية",
+        )
+        remainder = number % 100
+        return hundreds[number // 100] if not remainder else f"{hundreds[number // 100]} و{_spoken_number(remainder)}"
+    if number < 1000000:
+        thousands = number // 1000
+        remainder = number % 1000
+        prefix = "ألف" if thousands == 1 else f"{_spoken_number(thousands)} ألف"
+        return prefix if not remainder else f"{prefix} و{_spoken_number(remainder)}"
+    return str(number)
+
+
 def _direct_fallback_response(repository: Any, text: str) -> str | None:
     """Answer common factual intents without inventing facts when the LLM is unavailable."""
     folded = text.casefold()
@@ -117,7 +186,9 @@ def _direct_fallback_response(repository: Any, text: str) -> str | None:
         marker in folded for marker in ("إيه", "ايه", "أنواع", "انواع", "what", "which")
     ):
         items = repository.search_menu(query="", category="burgers", only_available=True)
-        names = "، ".join(f"{item.name_ar_eg} ({item.price} جنيه)" for item in items)
+        names = "، ".join(
+            f"{item.name_ar_eg} ({_spoken_number(item.price)} جنيه)" for item in items
+        )
         return f"عندنا حضرتك: {names}. تحب أقول لحضرتك تفاصيل مكونات أي اختيار؟"
     if ("حلومي" in folded or "حلوم" in folded) and any(
         marker in folded for marker in ("بكام", "سعر", "price", "كام")
@@ -142,7 +213,7 @@ def _direct_fallback_response(repository: Any, text: str) -> str | None:
         if items:
             item = items[0]
             return (
-                f"أرشح لحضرتك {item.name_ar_eg} بسعر {item.price} جنيه؛ "
+                f"أرشح لحضرتك {item.name_ar_eg} بسعر {_spoken_number(item.price)} جنيه؛ "
                 "اختيار خفيف ومش حار. تحب أقول لحضرتك مكوناته؟"
             )
     return None
@@ -243,7 +314,10 @@ def _direct_order_response(session: PhoneSession, text: str) -> str | None:
             "calculate_order_total", {"order_id": order.order_id}
         )
         total = result.get("breakdown", {}).get("total_egp")
-        return f"إجمالي طلب حضرتك {total} جنيه، شامل التوصيل والخصومات المطبقة."
+        return (
+            f"إجمالي طلب حضرتك {_spoken_number(total)} جنيه، "
+            "شامل التوصيل والخصومات المطبقة."
+        )
     if order is not None and any(
         marker in folded
         for marker in ("تمام", "أكد", "اكّد", "ده الأوردر", "هذا الطلب", "confirm")
@@ -301,7 +375,7 @@ def _direct_order_response(session: PhoneSession, text: str) -> str | None:
             "تمام يا حضرتك، سجلت طلب حضرتك بالكامل: "
             f"{_spoken_quantity(requested_lines[0]['quantity'])} برجر و"
             f"{_spoken_quantity(requested_lines[1]['quantity'])} بطاطس. "
-            f"الإجمالي الحالي {updated.get('total')} جنيه."
+            f"الإجمالي الحالي {_spoken_number(updated.get('total'))} جنيه."
         )
     item = _find_order_item(session.app.repository, folded)
     if item is None and order is not None and ("منه" in folded or "منها" in folded):
@@ -331,15 +405,16 @@ def _direct_order_response(session: PhoneSession, text: str) -> str | None:
     if not result.get("ok"):
         if result.get("error") == "UNKNOWN_ZONE":
             return (
-                f"تمام يا حضرتك، فهمت إنك عايز {quantity} من {item_label}. "
+                f"تمام يا حضرتك، فهمت إنك عايز {_spoken_quantity(quantity)} من {item_label}. "
                 "علشان أكمّل طلب التوصيل، محتاج أعرف المنطقة."
             )
         return "حضرتك، حصلت مشكلة وأنا بسجل الطلب. ممكن نجرب تاني؟"
     updated = result.get("order") or {}
     total = updated.get("total")
     return (
-        f"تمام يا حضرتك، سجلت {quantity} من {item_label}. "
-        f"الإجمالي الحالي {total} جنيه. تحب تضيف حاجة تانية ولا أأكد الطلب؟"
+        f"تمام يا حضرتك، سجلت {_spoken_quantity(quantity)} من {item_label}. "
+        f"الإجمالي الحالي {_spoken_number(total)} جنيه. "
+        "تحب تضيف حاجة تانية ولا أأكد الطلب؟"
     )
 
 
