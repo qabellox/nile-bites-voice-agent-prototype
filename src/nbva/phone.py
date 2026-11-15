@@ -52,6 +52,10 @@ _RESTAURANT_MARKERS = (
     "أكل",
     "اكل",
     "برجر",
+    "ساندوتش",
+    "سندوتش",
+    "sandwich",
+    "sandwiches",
     "بيتزا",
     "طلب",
     "طلبات",
@@ -341,10 +345,34 @@ def _direct_order_response(session: PhoneSession, text: str) -> str | None:
             return "تمام يا حضرتك، تم تأكيد الطلب. تحت أمرك."
     if not any(
         marker in folded
-        for marker in ("عايز", "عاوز", "محتاج", "اطلب", "هات", "add", "order")
+        for marker in (
+            "عايز",
+            "عاوز",
+            "محتاج",
+            "اطلب",
+            "هات",
+            "add",
+            "order",
+            "want",
+        )
     ):
         return None
     requested_lines = _find_order_lines(session.app.repository, folded)
+    if not requested_lines and any(
+        marker in folded
+        for marker in (
+            "ساندوتش",
+            "سندوتش",
+            "sandwich",
+            "sandwiches",
+            "chicken sandwich",
+            "chicken sandwiches",
+        )
+    ):
+        return (
+            "حضرتك، مش هفترض صنف من عندي. عندنا ساندوتش شاورما فراخ، "
+            "وساندوتش طعمية، وسندوتش حلومي مشوي. تحب أي نوع وبأي كمية؟"
+        )
     unresolved = next(
         (line for line in requested_lines if line.get("unresolved") == "burger"),
         None,

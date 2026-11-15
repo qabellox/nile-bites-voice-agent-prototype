@@ -133,3 +133,19 @@ def test_phone_does_not_invent_generic_burger_type(tmp_path: Path):
     assert "اتنين برجر" in response.json["response"]
     assert "خمسة بطاطس" in response.json["response"]
     assert "أي نوع برجر" in response.json["response"]
+
+
+def test_phone_does_not_substitute_burger_for_chicken_sandwich(tmp_path: Path):
+    app = create_phone_app(_offline_config(), tmp_path / "memory.sqlite3")
+    response = app.test_client().post(
+        "/api/chat",
+        json={
+            "call_id": "sandwich",
+            "caller_id": "sandwich",
+            "text": "I want three chicken sandwiches",
+        },
+    )
+    assert response.status_code == 200
+    answer = response.json["response"]
+    assert "برجر" not in answer
+    assert "أي نوع" in answer
