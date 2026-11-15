@@ -61,6 +61,8 @@ _RESTAURANT_MARKERS = (
     "سعر",
     "بكام",
     "حلومي",
+    "بطاطس",
+    "فرايز",
     "خفيف",
     "رشح",
     "متاح",
@@ -98,6 +100,13 @@ _QUANTITY_WORDS = {
     "اربعة": 4,
     "أربعة": 4,
     "خمسة": 5,
+}
+_QUANTITY_SPOKEN = {
+    1: "واحد",
+    2: "اتنين",
+    3: "تلاتة",
+    4: "أربعة",
+    5: "خمسة",
 }
 
 
@@ -159,6 +168,10 @@ def _quantity_from_text(text: str) -> int:
     return 1
 
 
+def _spoken_quantity(quantity: int) -> str:
+    return _QUANTITY_SPOKEN.get(quantity, str(quantity))
+
+
 def _find_order_item(repository: Any, text: str) -> Any | None:
     folded = text.casefold()
     candidates = []
@@ -171,6 +184,53 @@ def _find_order_item(repository: Any, text: str) -> Any | None:
     if "حلومي" in folded or "حلوم" in folded:
         return repository.items_by_id.get("NB-BURG-004")
     return None
+
+
+def _find_order_lines(repository: Any, text: str) -> list[dict[str, Any]]:
+    import re
+
+    folded = text.casefold()
+    lines: list[dict[str, Any]] = []
+    specific_burger_terms = (
+        "حلومي",
+        "حلوم",
+        "تشيز",
+        "جبنة",
+        "زنجر",
+        "خضار",
+        "نباتي",
+        "فراخ",
+        "دجاج",
+        "كلاسيك",
+        "halloumi",
+        "cheese",
+        "zinger",
+        "veggie",
+        "chicken",
+    )
+    generic_burger = "برجر" in folded and not any(
+        term in folded for term in specific_burger_terms
+    )
+    if generic_burger:
+        burger_quantity = _quantity_from_text(folded)
+        if burger_quantity:
+            lines.append({"unresolved": "burger", "quantity": burger_quantity})
+    burger_item = _find_order_item(repository, folded)
+    if burger_item is not None and not generic_burger:
+        lines.append(
+            {"item": burger_item.id, "quantity": _quantity_from_text(folded)}
+        )
+    if "بطاطس" in folded or "فرايز" in folded or "fries" in folded:
+        fries = repository.items_by_id.get("NB-SIDE-001")
+        if fries is not None:
+            match = re.search(
+                r"(?:و|and)?\s*(اتنين|اثنين|تلاتة|ثلاثة|اربعة|أربعة|خمسة|\d+)\s*"
+                r"(?:من\s*)?(?:بطاطس|فرايز|fries)",
+                folded,
+            )
+            quantity = _quantity_from_text(match.group(1)) if match else 1
+            lines.append({"item": fries.id, "quantity": quantity})
+    return lines
 
 
 def _direct_order_response(session: PhoneSession, text: str) -> str | None:
@@ -198,6 +258,51 @@ def _direct_order_response(session: PhoneSession, text: str) -> str | None:
         for marker in ("عايز", "عاوز", "محتاج", "اطلب", "هات", "add", "order")
     ):
         return None
+    requested_lines = _find_order_lines(session.app.repository, folded)
+    unresolved = next(
+        (line for line in requested_lines if line.get("unresolved") == "burger"),
+        None,
+    )
+    if unresolved is not None:
+        return (
+            f"سمعت حضرتك: {_spoken_quantity(unresolved['quantity'])} برجر و"
+            f"{_spoken_quantity(next((line['quantity'] for line in requested_lines if line.get('item') == 'NB-SIDE-001'), 0))} "
+            "بطاطس. حضرتك تقصد أي نوع برجر؟"
+        )
+    if len(requested_lines) > 1:
+        zone = None
+        for candidate in session.app.repository.zones():
+            if candidate.name_ar_eg.casefold() in folded or any(
+                alias.casefold() in folded for alias in candidate.aliases
+            ):
+                zone = candidate.id
+                break
+        if order is None:
+            result = session.app.session.tools.dispatch(
+                "create_order",
+                {"lines": requested_lines, "order_mode": "delivery", "zone": zone},
+            )
+        else:
+            result = session.app.session.tools.dispatch(
+                "modify_order",
+                {"order_id": order.order_id, "add": requested_lines},
+            )
+        if not result.get("ok"):
+            if result.get("error") == "UNKNOWN_ZONE":
+                return (
+                    "تمام يا حضرتك، فهمت طلب حضرتك: "
+                    f"{_spoken_quantity(requested_lines[0]['quantity'])} برجر و"
+                    f"{_spoken_quantity(requested_lines[1]['quantity'])} بطاطس. "
+                    "محتاج أعرف منطقة التوصيل علشان أكمل الطلب."
+                )
+            return "حضرتك، حصلت مشكلة وأنا بسجل الأصناف. ممكن نجرب تاني؟"
+        updated = result.get("order") or {}
+        return (
+            "تمام يا حضرتك، سجلت طلب حضرتك بالكامل: "
+            f"{_spoken_quantity(requested_lines[0]['quantity'])} برجر و"
+            f"{_spoken_quantity(requested_lines[1]['quantity'])} بطاطس. "
+            f"الإجمالي الحالي {updated.get('total')} جنيه."
+        )
     item = _find_order_item(session.app.repository, folded)
     if item is None and order is not None and ("منه" in folded or "منها" in folded):
         if len(order.lines) == 1:

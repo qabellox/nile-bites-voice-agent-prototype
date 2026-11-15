@@ -96,3 +96,34 @@ def test_phone_handles_arabic_order_without_llm_tool_call(tmp_path: Path):
     assert "200" in first.json["response"]
     assert "200" in second.json["response"]
     assert "تم تأكيد الطلب" in third.json["response"]
+
+
+def test_phone_preserves_multiple_arabic_order_items(tmp_path: Path):
+    app = create_phone_app(_offline_config(), tmp_path / "memory.sqlite3")
+    response = app.test_client().post(
+        "/api/chat",
+        json={
+            "call_id": "multi",
+            "caller_id": "multi",
+            "text": "عايز اتنين برجر وخمسة بطاطس",
+        },
+    )
+    assert response.status_code == 200
+    assert "اتنين برجر" in response.json["response"]
+    assert "خمسة بطاطس" in response.json["response"]
+
+
+def test_phone_does_not_invent_generic_burger_type(tmp_path: Path):
+    app = create_phone_app(_offline_config(), tmp_path / "memory.sqlite3")
+    response = app.test_client().post(
+        "/api/chat",
+        json={
+            "call_id": "generic",
+            "caller_id": "generic",
+            "text": "عايز اتنين برجر وخمسة بطاطس في مدينة نصر",
+        },
+    )
+    assert response.status_code == 200
+    assert "اتنين برجر" in response.json["response"]
+    assert "خمسة بطاطس" in response.json["response"]
+    assert "أي نوع برجر" in response.json["response"]
