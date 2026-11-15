@@ -369,8 +369,10 @@ def _direct_order_response(session: PhoneSession, text: str) -> str | None:
             "chicken sandwiches",
         )
     ):
+        requested_quantity = _quantity_from_text(folded)
         return (
-            "حضرتك، مش هفترض صنف من عندي. عندنا ساندوتش شاورما فراخ، "
+            f"سمعت حضرتك بتقول {_spoken_quantity(requested_quantity)} ساندوتش فراخ. "
+            "مش هفترض صنف من عندي. عندنا ساندوتش شاورما فراخ، "
             "وساندوتش طعمية، وسندوتش حلومي مشوي. تحب أي نوع وبأي كمية؟"
         )
     unresolved = next(
