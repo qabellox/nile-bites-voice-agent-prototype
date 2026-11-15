@@ -642,67 +642,13 @@ class PhoneBridge:
                 "state": session.app.session.state_snapshot(),
                 "session": session.app.describe(),
             }
-        direct_response = _direct_fallback_response(session.app.repository, clean_text)
-        if direct_response is not None:
-            self.memory.append(caller_id, "user", clean_text)
-            self.memory.append(caller_id, "assistant", direct_response)
-            return {
-                "response": direct_response,
-                "turn": {},
-                "state": None,
-                "session": session.app.describe(),
-            }
-        if any(
-            marker in folded_text
-            for marker in (
-                "burger",
-                "sandwich",
-                "fries",
-                "wrap",
-                "chicken",
-                "برجر",
-                "ساندوتش",
-                "سندوتش",
-                "بطاطس",
-                "فرايز",
-                "فراخ",
-                "دجاج",
-            )
-        ):
-            safe_response = (
-                "حضرتك، مش هخمن صنف أو كمية. مش قادر أطابق الطلب ده مع صنف "
-                "محدد في المنيو. ممكن تقول اسم الصنف والعدد بوضوح؟"
-            )
-            self.memory.append(caller_id, "user", clean_text)
-            self.memory.append(caller_id, "assistant", safe_response)
-            return {
-                "response": safe_response,
-                "turn": {},
-                "state": session.app.session.state_snapshot(),
-                "session": session.app.describe(),
-            }
-        if has_arabic and any(marker in folded_text for marker in _RESTAURANT_MARKERS):
-            safe_response = _arabic_safe_clarification(clean_text)
-            self.memory.append(caller_id, "user", clean_text)
-            self.memory.append(caller_id, "assistant", safe_response)
-            return {
-                "response": safe_response,
-                "turn": {},
-                "state": None,
-                "session": session.app.describe(),
-            }
         result = session.app.pipeline.process_turn(text=clean_text, speak=False)
         session.app.logger.log_turn(result.turn)
         response_text = result.response_text.strip()
         fallback_response = _direct_fallback_response(
             session.app.repository, clean_text
         )
-        if fallback_response and (
-            result.error
-            or not response_text
-            or not result.tool_calls
-            or any(marker in response_text.casefold() for marker in _VAGUE_RESPONSE_MARKERS)
-        ):
+        if fallback_response and result.error:
             response_text = fallback_response
         if not response_text:
             response_text = (
