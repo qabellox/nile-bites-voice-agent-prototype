@@ -255,6 +255,15 @@ def _quantity_from_text(text: str) -> int:
     return 1
 
 
+def _has_explicit_quantity(text: str) -> bool:
+    import re
+
+    normalized = str(text).translate(str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789")).casefold()
+    if re.search(r"(?<!\d)[0-9]+(?!\d)", normalized):
+        return True
+    return any(word in normalized for word in _QUANTITY_WORDS)
+
+
 def _spoken_quantity(quantity: int) -> str:
     return _QUANTITY_SPOKEN.get(quantity, str(quantity))
 
@@ -357,6 +366,11 @@ def _direct_order_response(session: PhoneSession, text: str) -> str | None:
         )
     ):
         return None
+    if not _has_explicit_quantity(folded):
+        return (
+            "حضرتك، سمعت اسم الصنف لكن الكمية مش واضحة. "
+            "ممكن تقول العدد المطلوب صراحة؟"
+        )
     requested_lines = _find_order_lines(session.app.repository, folded)
     if not requested_lines and any(
         marker in folded
@@ -636,6 +650,35 @@ class PhoneBridge:
                 "response": direct_response,
                 "turn": {},
                 "state": None,
+                "session": session.app.describe(),
+            }
+        if any(
+            marker in folded_text
+            for marker in (
+                "burger",
+                "sandwich",
+                "fries",
+                "wrap",
+                "chicken",
+                "برجر",
+                "ساندوتش",
+                "سندوتش",
+                "بطاطس",
+                "فرايز",
+                "فراخ",
+                "دجاج",
+            )
+        ):
+            safe_response = (
+                "حضرتك، مش هخمن صنف أو كمية. مش قادر أطابق الطلب ده مع صنف "
+                "محدد في المنيو. ممكن تقول اسم الصنف والعدد بوضوح؟"
+            )
+            self.memory.append(caller_id, "user", clean_text)
+            self.memory.append(caller_id, "assistant", safe_response)
+            return {
+                "response": safe_response,
+                "turn": {},
+                "state": session.app.session.state_snapshot(),
                 "session": session.app.describe(),
             }
         if has_arabic and any(marker in folded_text for marker in _RESTAURANT_MARKERS):

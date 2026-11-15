@@ -87,7 +87,7 @@ def test_phone_handles_arabic_order_without_llm_tool_call(tmp_path: Path):
         json={
             "call_id": "order",
             "caller_id": "order",
-            "text": "عايز برجر حلومي مشوي في مدينة نصر",
+            "text": "عايز واحد برجر حلومي مشوي في مدينة نصر",
         },
     )
     second = client.post(
@@ -149,3 +149,22 @@ def test_phone_does_not_substitute_burger_for_chicken_sandwich(tmp_path: Path):
     answer = response.json["response"]
     assert "برجر" not in answer
     assert "أي نوع" in answer
+
+
+def test_phone_never_assumes_quantity_when_transcript_loses_number(tmp_path: Path):
+    app = create_phone_app(_offline_config(), tmp_path / "memory.sqlite3")
+    response = app.test_client().post(
+        "/api/chat",
+        json={
+            "call_id": "missing-quantity",
+            "caller_id": "missing-quantity",
+            "text": "I want a chicken burger",
+        },
+    )
+    assert response.status_code == 200
+    answer = response.json["response"]
+    assert "الكمية" in answer
+    bridge = app.config["NBVA_PHONE_BRIDGE"]
+    assert bridge.session_for(
+        "missing-quantity", "missing-quantity"
+    ).app.session.orders.current_order() is None
