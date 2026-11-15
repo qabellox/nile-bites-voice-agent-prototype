@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from nbva.config.loader import load_config
-from nbva.phone import ConversationMemory, create_phone_app, twiml_response
+from nbva.phone import ConversationMemory, _quantity_from_text, create_phone_app, twiml_response
 
 
 def _offline_config():
@@ -22,6 +22,12 @@ def test_memory_round_trip(tmp_path: Path):
     memory.append("caller", "user", "عايز برجر")
     memory.append("caller", "assistant", "تمام")
     assert [turn["text"] for turn in memory.load("caller")] == ["عايز برجر", "تمام"]
+
+
+def test_quantity_parser_handles_arabic_digits_and_number_words():
+    assert _quantity_from_text("عايز ٣ برجر") == 3
+    assert _quantity_from_text("عايز ٢ بطاطس") == 2
+    assert _quantity_from_text("عايز three burgers") == 3
 
 
 def test_twiml_escapes_text_and_contains_gather():

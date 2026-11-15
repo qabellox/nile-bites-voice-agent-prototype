@@ -121,12 +121,13 @@
   function startRecognition() {
     const API=window.SpeechRecognition||window.webkitSpeechRecognition;
     if (!API) { setState('Type your message','busy'); text.focus(); return; }
-    recognition=new API(); recognition.lang='ar-EG'; recognition.interimResults=false; recognition.continuous=false; recognitionHandled=false; heardThisTurn=false;
+    recognition=new API(); recognition.lang='ar-EG'; recognition.interimResults=false; recognition.continuous=false; recognition.maxAlternatives=5; recognitionHandled=false; heardThisTurn=false;
     recognition.onstart=()=>{listening=true; call.classList.add('active'); setState('Listening…','live');};
     recognition.onresult=e=>{
       if (recognitionHandled) return;
       recognitionHandled=true;
-      const value=e.results[0][0].transcript.trim();
+      const alternatives=Array.from(e.results[0]).map(result=>result.transcript.trim()).filter(Boolean);
+      const value=(alternatives.find(candidate=>/[0-9٠-٩]|واحد|واحدة|اتنين|اثنين|تنين|تلاتة|ثلاثة|اربعة|أربعة|خمسة|six|seven|eight|nine|ten|one|two|three|four|five/i.test(candidate)) || alternatives[0] || '').trim();
       const now=Date.now();
       if (!value || (value===lastTranscript && now-lastTranscriptAt<2500)) return;
       lastTranscript=value; lastTranscriptAt=now; heardThisTurn=true; text.value=value; send(value);

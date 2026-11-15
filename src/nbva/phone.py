@@ -100,6 +100,17 @@ _QUANTITY_WORDS = {
     "اربعة": 4,
     "أربعة": 4,
     "خمسة": 5,
+    "تنين": 2,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "ten": 10,
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
 }
 _QUANTITY_SPOKEN = {
     1: "واحد",
@@ -230,11 +241,12 @@ def _arabic_safe_clarification(text: str) -> str:
 def _quantity_from_text(text: str) -> int:
     import re
 
-    match = re.search(r"\b([0-9]+)\b", text)
+    normalized = str(text).translate(str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789"))
+    match = re.search(r"(?<!\d)([0-9]+)(?!\d)", normalized)
     if match:
         return max(1, int(match.group(1)))
     for word, quantity in _QUANTITY_WORDS.items():
-        if word in text:
+        if word in normalized.casefold():
             return quantity
     return 1
 
