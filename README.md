@@ -1,40 +1,48 @@
-# Egyptian Arabic–English Code-Switching in Voice Agents
+# Reliability-Oriented Voice Agent Architecture
 
-A research project studying how increasing Egyptian Arabic–English code-switching
-intensity affects the **latency**, **speech-recognition accuracy**, and
-**end-to-end task accuracy** of a voice agent, and whether a **targeted
-architecture** can mitigate the resulting degradation.
+A research and engineering project studying how **agent architecture** and
+**language-model capability** affect the **task accuracy**, **latency**, and
+**cost** of a tool-using conversational voice agent — including when the model is
+weak or inexpensive. The architecture is designed to get the best possible result
+out of whatever model it is given.
 
 **Current state:** the research instrument is built and tested. The design
 documents and the research decision log exist, and a working agent runs the full
 pipeline against the fictional restaurant database. **No research data has been
 collected and no trial has been executed** — the methodology still has open items
-awaiting researcher approval, listed at the end of
-`01_Research_Design/Day_01_Research_Design.md`.
+awaiting researcher approval.
+
+**Current authoritative direction:** `01_Research_Design/Current_Direction.md`.
+The older Egyptian Arabic–English code-switching study is preserved as
+superseded/historical material and is **not** the current design.
 
 ---
 
 ## What this project is
 
 The project runs a controlled experiment on a voice agent that serves a
-**fictional Egyptian restaurant**. Users speak Egyptian Arabic, English, or
-Egyptian Arabic–English code-switched speech. The agent must understand requests
-and perform controlled business tasks against a fixed database.
+**fictional Egyptian restaurant**. Users speak Egyptian Arabic, English, or a
+mixture; code-switching is a property of the application environment, not the
+independent variable. The agent must understand requests and perform controlled
+business tasks against a fixed database.
 
-The manipulated variable is **code-switching intensity**, measured as English
-lexical-token proportion (English lexical tokens / total lexical tokens × 100).
-Five conditions are intended, from C0 (0%) upward.
+The independent variables are **model capability** (weak/inexpensive vs strong)
+and **agent architecture** (conventional sequential baseline vs a
+reliability/efficiency architecture). The design is a 2 × 2 comparison; model
+identities remain unapproved.
 
-The scientific sequence is deliberately one-directional:
+The core hypothesis is that a reliability-oriented architecture can compensate
+for model weakness: it should raise task accuracy and reduce latency for a fixed
+model, and let a weak model approach a strong model's accuracy at lower cost.
+
+The scientific sequence is:
 
 ```
-Baseline experiment → observe failures → classify failures
-→ identify failure mechanisms → design targeted architecture
-→ implement intervention → test intervention → compare results
+Freeze task set + ground truth → implement separable A0 and A1
+→ run the four cells → score final state → classify failures
+→ compare accuracy, latency, and cost → ablate components before
+  making component-level claims
 ```
-
-The intervention is **not** predetermined. It is an output of the baseline
-experiment, not an input to it.
 
 ---
 
@@ -45,11 +53,11 @@ experiment, not an input to it.
 | `01_Research_Design/` | Research design documents, including `Day_01_Research_Design.md` (the authoritative Day 1 design record) |
 | `02_Literature/` | Prior work, references, and positioning of this study |
 | `03_Business_Environment/` | Design and contents of the fictional restaurant database and business rules |
-| `04_Task_Dataset/` | Task definitions and the matched-task trial sets across code-switching conditions |
+| `04_Task_Dataset/` | Task definitions and the matched task sets used across all four model × architecture cells |
 | `05_Audio/` | Audio assets and audio-condition specifications |
 | `06_Baseline_Agent/` | The straightforward baseline voice-agent implementation |
 | `07_Experiments/` | Experiment configuration, run orchestration, and raw run records |
-| `08_Intervention/` | The targeted architecture, once it is derived from observed failure mechanisms |
+| `08_Intervention/` | The reliability/efficiency architecture (A1) and its component record |
 | `09_Analysis/` | Scoring, statistics, and analysis of collected results |
 | `10_Figures_Tables/` | Generated figures and tables for the write-up |
 | `11_Paper/` | Manuscript text |
@@ -69,7 +77,7 @@ This distinction governs how work in this repository is done.
 
 - the research question and its scope boundaries
 - what is and is not an outcome variable
-- the definition of code-switching intensity
+- the definition of model capability and of the architecture factor
 - the numerical boundaries of the experimental conditions
 - the definition of the experimental unit
 - the matched-task principle and how meaning-equivalence is verified
@@ -141,7 +149,7 @@ microphone → VAD → ASR → LLM (with tool calls) → business tools → TTS 
 | Business layer | `nbva.db`, `nbva.tools` | 14 tools over a fictional restaurant, priced deterministically |
 | Session and pipeline | `nbva.agent` | trial lifecycle, state, tool loop, grounding checks |
 | Logging | `nbva.obs` | one JSONL per session, with latency markers and participant attribution |
-| Measure and analysis | `nbva.research` | the code-switching measure, task evaluation, error classification |
+| Measure and analysis | `nbva.research` | task evaluation, error classification, experiment support (legacy code-switching measure retained) |
 
 ### Running it
 
@@ -151,7 +159,7 @@ pip install -r requirements.txt
 python -m pytest                      # the whole suite, offline, no keys
 python -m nbva preflight              # would a run start? models, audio, task set
 python -m nbva check                  # config, database, tools, measure, audio devices
-python -m nbva audit                  # declared vs measured code-switching condition
+python -m nbva audit                  # LEGACY: C0–C4 condition audit (not current design)
 python -m nbva devices                # list microphones and speakers
 python -m nbva config --key llm.model # inspect a resolved setting
 python -m nbva live                   # real-time microphone and speakers
@@ -182,18 +190,17 @@ internally coherent; `preflight` proves the machine is ready.
 declares:
 
 ```powershell
-python -m nbva audit                  # distribution and mismatches
+python -m nbva audit                  # LEGACY: C0–C4 distribution and mismatches
 python -m nbva audit --all            # list every turn, not just mismatches
 python -m nbva audit --json           # machine-readable
 python -m nbva audit --task-id DEV-CTX-01
 ```
 
-The shipped development set is deliberately **inconsistent**: 16 of its 33 turns
-measure into a different band than they declare, and the labels are systematically
-low rather than scattered, which points at the hand-written labels rather than at
-the measure. It exists to develop and test the instrument, and it is not the
-research task set. `audit` makes that visible instead of leaving it to be
-discovered during analysis.
+The C0–C4 audit is retained for the superseded code-switching instrument, not
+the current design. The shipped development set is deliberately **inconsistent**:
+16 of its 33 turns measure into a different band than they declare. `audit` makes
+that visible instead of leaving it to be discovered during analysis. Do not use
+the C0–C4 results as evidence for the architecture study.
 
 ### Exercising the live path without a human
 
@@ -247,12 +254,12 @@ proceed:
   participant cannot be silently repriced.
 - Orders keep the weekday they were priced under, so re-totalling later in a
   session cannot change a number the customer was already told.
-- **A research run does not start on a task set whose turns do not measure into
-  the condition they declare.** Code-switching intensity is the manipulated
-  variable, so a mislabelled task set means the independent variable is not what
-  the design says it is — and it is knowable before anyone speaks, so there is no
-  reason to discover it during analysis. Development runs only warn, because an
-  inconsistent set is normal while a set is being authored.
+- **LEGACY C0–C4 rule (not the current design): a research run does not start on
+  a task set whose turns do not measure into the condition they declare.** This
+  guard belongs to the superseded code-switching instrument and is retained so
+  the old material cannot be misused. The current architecture study holds the
+  task set constant across cells; its equivalent guard is that the task set and
+  ground truth are frozen and identical in all four cells.
 
 Two things this deliberately does **not** decide, because they are scientific
 rather than mechanical:
@@ -335,8 +342,8 @@ authentication; the Vercel project can then be redeployed from that device.
 
 ## Project boundaries
 
-The research concerns Egyptian Arabic–English code-switching in controlled
-voice-agent business interactions. Findings do not automatically generalize to all
-Arabic speakers, all Egyptian speakers, all voice agents, all languages, all AI
-systems, or all commercial applications. See Section 15 of the Day 1 design
-document.
+The research concerns agent architecture and model capability in controlled
+Egyptian Arabic–English voice-agent business interactions. Findings do not
+automatically generalize to all Arabic speakers, all Egyptian speakers, all voice
+agents, all languages, all AI systems, or all commercial applications. See
+Section 15 of the Day 1 design document.

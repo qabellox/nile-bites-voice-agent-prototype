@@ -187,13 +187,38 @@ prevents implementation convenience from shaping the methodology.
 
 ## Future Methodological Changes
 
-*No methodological change has been decided yet. This section is intentionally
-empty and must remain empty until the researcher approves a specific change.*
+### 2026-11-18 — Primary variable changed to architecture × model capability
 
-Record each change as: date, which D1 entry it modifies or supersedes, the new
-decision, the rationale, and whether it affects comparability with data already
-collected.
+**Recorded at the researcher's explicit direction during the 2026-11-18 working
+session; transcribed by the coding agent on instruction. The researcher should
+edit this wording if it does not match their intent.**
+
+**Decision.** The project's independent variables are now **agent architecture**
+(conventional sequential baseline A0 vs reliability/efficiency architecture A1)
+and **language-model capability** (weak/inexpensive vs strong). The primary
+outcomes are task accuracy, then latency and cost. Egyptian Arabic–English
+code-switching is an application-environment property, not the manipulated
+variable. Fine-tuning is not an approved current factor. The full design is
+`01_Research_Design/Current_Direction.md`; the operational protocol is the
+rewritten `EXPERIMENT_PROTOCOL.md`.
+
+**Supersedes.** D1-01 (research question), D1-05's "code-switching condition"
+clause, D1-06 (code-switching intensity measure), D1-07 (five C0–C4 conditions).
+
+**Rationale.** The researcher's core thesis is that a reliability-oriented
+architecture can improve effectiveness and efficiency and get the best result out
+of any model, including a weak one. Code-switching intensity does not test that
+thesis.
+
+**Disposition of old material.** The Day 1 document, the archived protocol
+(`01_Research_Design/_superseded/EXPERIMENT_PROTOCOL_v1_code_switching.md`), the
+C0–C4 measure, and the synthetic pilot data are preserved for auditability and
+possible secondary analysis. They are not the current design and must not be
+described as such.
+
+**Affects collected data?** No — no formal research data has been collected.
 
 | Date | Modifies | Change | Rationale | Affects collected data? |
 |------|----------|--------|-----------|--------------------------|
-| — | — | — | — | — |
+| 2026-11-18 | D1-01, D1-05, D1-06, D1-07 | Architecture × model capability replaces code-switching intensity as the primary design | Architecture can compensate for model weakness; code-switching is environment, not IV | No |
+

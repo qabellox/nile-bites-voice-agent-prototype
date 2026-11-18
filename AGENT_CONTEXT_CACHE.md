@@ -29,11 +29,14 @@ files it points to. It stores verified state and pointers, never the full docs.
   IP / venture: a reliability-oriented conversational-agent architecture.
 - **Nile Bites** = fictional controlled restaurant/evaluation environment. No real
   customers, purchases, or restaurant claims.
-- **Older C0–C4 code-switching study is preserved but superseded** as primary IV;
-  secondary/historical only. Never silently promote it back.
-- Working question, provisional title, 2×2 design: authority is
-  `AUTONOMOUS_AGENT_HANDOFF.md` §2–§4. Models are NOT confirmed. The 360-trial
-  figure is feasibility planning, not a sample size.
+- **The study is NOT code-switching.** Primary IVs: **agent architecture**
+  (A0 baseline vs A1 reliability/efficiency) × **model capability** (weak vs
+  strong). Code-switching is only an application-environment property. The old
+  C0–C4 material is preserved as superseded/historical — never cite it as the
+  current design.
+- Working question, title, 2×2 design and component list: authority is
+  `01_Research_Design/Current_Direction.md` + `EXPERIMENT_PROTOCOL.md`. Models
+  are NOT confirmed. The 360-trial figure is feasibility planning only.
 - **Research authority files (do not edit without researcher approval):**
   - `01_Research_Design/Day_01_Research_Design.md`
   - `EXPERIMENT_PROTOCOL.md`
@@ -63,9 +66,11 @@ Browser mic → browser SpeechRecognition (ar-EG) → POST /api/chat {transcript
 
 ## 4. Known drifts / contradictions (open)
 
-1. `EXPERIMENT_PROTOCOL.md` still frames **baseline vs streaming over C0–C4**;
-   handoff §2 supersedes this with the **2×2 model × architecture** question.
-   Needs a researcher-approved reconciliation; do not delete old material.
+1. ~~`EXPERIMENT_PROTOCOL.md` still frames baseline vs streaming over C0–C4.~~
+   **RESOLVED 2026-11-18:** protocol rewritten for architecture × model
+   capability; old version archived at
+   `01_Research_Design/_superseded/EXPERIMENT_PROTOCOL_v1_code_switching.md`;
+   Day 1 doc carries a SUPERSEDED banner; decision log updated.
 2. Provider drift: `config/llm.yaml` default model is `qwen2.5:7b-instruct` /
    `openai_compatible`; production model comes from hidden `OPENAI_MODEL`
    (gpt-4o-mini per prior verified runs — re-verify). `config/tts.yaml` says
@@ -77,7 +82,8 @@ Browser mic → browser SpeechRecognition (ar-EG) → POST /api/chat {transcript
 5. **Public visibility risk:** the public prototype repo exposes the full
    architecture, handoff, and research docs. No secret values found in a scan,
    but IP/disclosure review is required (handoff §14).
-6. C1–C4 boundaries provisional; dev task set: 16/33 turns measure off-band.
+6. **LEGACY:** C1–C4 boundaries provisional; dev set 16/33 off-band — belongs to
+   the superseded C0–C4 instrument only.
 7. No formal human-participant data exists. `data/pilot/` is synthetic dev-only.
 
 ## 5. Safety contract (code-enforced — never weaken)
@@ -95,10 +101,11 @@ Browser mic → browser SpeechRecognition (ar-EG) → POST /api/chat {transcript
 - **P0 safety:** structured intent extraction (item, qty, zone, confidence,
   clarification) + field validation vs transcript + DB; preview/confirm;
   idempotency; provider health/quota/401/402/429 monitoring; server-side Arabic ASR.
-- **P1 research:** implement separable conventional baseline + reliability
-  architecture; keep context manager / orchestrator / tool gateway / validation
-  observable; add ablations before claiming component effects; freeze two
-  comparable models only after researcher approval.
+- **P1 research:** implement separable conventional baseline (A0) + reliability
+  architecture (A1); keep context manager / orchestrator / tool gateway /
+  validation observable; add ablations before claiming component effects; freeze
+  two comparable models only after researcher approval. Fine-tuning is NOT a
+  factor.
 - **P1 venture/IP:** dated architecture + invention records; prior-art matrix;
   business wedge; unit economics; separate product benchmarks from science.
 - **P3 competition:** audit → researcher approves design → abstract, ≤2-min video,
@@ -118,3 +125,4 @@ Browser mic → browser SpeechRecognition (ar-EG) → POST /api/chat {transcript
 | Date | Commit | Change | Verified by |
 |---|---|---|---|
 | 2026-11-18 | a80912e | Cache created after handoff audit | pytest 418/0; /healthz ok; git remotes |
+| 2026-11-18 | direction-change commit | Removed code-switching as primary design; new Current_Direction + rewritten protocol; old archived; decision log updated | doc review; tests 418/0 |

@@ -9,6 +9,13 @@ as dated entries with the researcher's own rationale.
 Each item says what the code does now, why, and what would change if the
 researcher decides otherwise.
 
+> **Scope update 2026-11-18.** The primary design is now architecture × model
+> capability (`01_Research_Design/Current_Direction.md`). Items P-02 (C1–C4
+> bands), P-03 as a primary WER measure, and P-08 (condition drift) apply only to
+> the superseded C0–C4 instrument. P-01 (latency endpoint), P-04 (task rubric),
+> P-05 (annotation), P-06 (statistics), P-07 (technology selection), P-09 (trial
+> counts), and P-10 (latency thresholds) remain active for the current design.
+
 ---
 
 ## P-01 — Latency is measured to the first audio sample, not the acoustic wave

@@ -1,135 +1,117 @@
-# Experiment Protocol: Baseline vs Streaming Intervention
+# Experiment Protocol: Model Capability × Agent Architecture
 
-Status: **INFRASTRUCTURE READY — NO FORMAL DATA COLLECTED.**
-This document specifies the controlled comparison. Nothing here starts data
-collection; the pilot dataset under `data/pilot/` is synthetic development
-material and is never to be represented as research data.
+Status: **SPECIFICATION — CANDIDATE DESIGN, NOT FROZEN. NO FORMAL DATA COLLECTED.**
+This protocol operationalises `01_Research_Design/Current_Direction.md`. It
+supersedes the archived C0–C4 protocol at
+`01_Research_Design/_superseded/EXPERIMENT_PROTOCOL_v1_code_switching.md`.
 
-## 1. Research question (unchanged)
+## 1. Research question
 
-How do latency, ASR accuracy, end-to-end task accuracy, and robustness under
-increasing Egyptian Arabic–English code-switching differ between the
-conventional sequential voice-agent architecture and the streaming
-incremental architecture?
+How do agent architecture and language-model capability independently and
+jointly affect task accuracy, response latency, and cost of Egyptian
+Arabic–English conversational voice agents in tool-based tasks?
 
-## 2. Independent variable
+## 2. Independent variables (2 × 2)
 
-Architecture, two levels: `baseline` (sequential: full-utterance ASR → LLM →
-tools → complete TTS → playback) vs `streaming` (chunked ASR →
-partial/committed/final hypotheses → incremental understanding → speculative
-read-only tools → streaming LLM → streaming TTS).
+| Factor | Level | Code |
+|---|---|---|
+| Model capability | weak/inexpensive model | M |
+| Model capability | strong model | S |
+| Architecture | conventional sequential baseline | A0 |
+| Architecture | optimized reliability/efficiency architecture | A1 |
 
-## 3. Dependent variables (per trial, per architecture)
+Cells: `M-A0`, `M-A1`, `S-A0`, `S-A1`. Model identities remain unapproved;
+both must support the same tool interface and comparable settings.
 
-- Task accuracy: `task_success` + `task_score` from assertion-based grading
-  against deterministic business state (wording never graded).
-- ASR accuracy: WER of ASR transcript vs verified reference transcript.
-- Latency: `speech_end → response_audio` in seconds, plus component spans
-  (`asr_ms`, `llm_ms`, `tools_ms`, `tts_ms`).
-- Robustness curve: the above as a function of code-switching condition.
-- Failure category: one of the ten locked categories (`failure.py`).
+## 3. Dependent variables
+
+**Primary — task accuracy.** Assertion-based grading against deterministic
+business state (order lines, quantities, totals, zone, status, required tools).
+Wording is never graded.
+
+**Secondary.** First-audio latency (`speech_end → first response sample`);
+turn-completion latency (`speech_end → final response ready`); cost per
+successful task where consistently measurable. The two latency endpoints are
+recorded and analysed separately and are never mixed.
+
+**Diagnostic.** Tool-selection accuracy, tool-argument accuracy, context
+retention, grounding violations, clarification rate, failure category, token /
+call overhead.
 
 ## 4. Controlled variables (frozen per experiment)
 
-Recorded verbatim in `freeze.json` by `research.experiment.freeze_experiment`:
-ASR provider/model/settings, LLM provider/model/settings, TTS
-provider/voice/settings, beam setting (default greedy; beam-5 stays opt-in),
-database snapshot (file copy + sha256), system prompt (copy + sha256),
-failure thresholds, condition-band snapshot, software versions
-(python + key packages). The shipped `config/*.yaml` files are never edited
-for an experiment; the freeze copies values instead.
+Recorded in `freeze.json`: ASR provider/model/settings; TTS provider/voice/
+settings; task set and references; database snapshot + SHA-256; system prompt
+copy + SHA-256; tool registry; model identifiers and provider settings;
+temperature/top-p/max tokens; failure thresholds; Python and package versions;
+pinned business weekday. Shipped `config/*.yaml` files are not edited for a run;
+the freeze copies the resolved values.
 
-## 5. The locked measure (unchanged, non-negotiable)
+## 5. Architectures
 
-English lexical tokens / total lexical tokens × 100, computed from the
-VERIFIED REFERENCE transcript, never from ASR output. C0–C4 numeric band
-boundaries are PROVISIONAL (`config/conditions.yaml`) and are frozen by the
-researcher only AFTER inspecting the pilot distribution
-(`pilot_distribution()` reports per-band n/min/max/mean and never chooses
-boundaries). C0 (exactly 0%) is fixed by definition.
+**A0 — conventional sequential baseline.** Full-utterance speech → full ASR →
+single LLM tool loop → deterministic tools → complete TTS → playback.
 
-## 6. Baseline (research control)
+**A1 — optimized reliability/efficiency architecture.** Five components from
+`Current_Direction.md` §4: context manager; orchestration; structured tool
+gateway; validation/reliability layer; latency path. A1 is evaluated as a
+**combined** architecture. Component-level claims require ablations, and the
+ablation switches must exist before such claims.
 
-`BaselinePipeline.process_turn`: full utterance → full ASR → tool-loop LLM →
-grounding → complete TTS. Frozen; only already-approved bug fixes apply.
+## 6. Trial structure
 
-## 7. Intervention (candidate)
+One trial = one task (possibly multi-turn) executed in one fresh session per
+cell, with fresh business state. Heavy providers are shared to avoid re-loading,
+but state never crosses trials. Trial ids are namespaced per cell
+(`<task>-<model>-<architecture>`).
 
-`nbva.stream.StreamingTurnLoop`: overlapping ASR windows, local-agreement
-commits with counted revisions, per-commit language awareness (mixed content
-preserved, never forced to one script), commit-gated speculative READ-ONLY
-tools (allowlist enforced in code; `create/modify/cancel/confirm_order`
-require final interpretation), token-streaming LLM, sentence-streaming TTS,
-barge-in hook. Single-pass mixed decoding first; dual-decode only if fidelity
-measurements demonstrate single-pass inadequacy.
+## 7. Metrics and records
 
-## 8. Trial structure
+Per-trial record: cell, model/architecture ids, task id/family, reference and
+observed transcripts, task success/score, failure category (+detail), speech-end
+and response timestamps, first-audio and completion latency, component spans,
+tool calls, token usage, cost estimate, error.
 
-One trial = one `TrialSpec` (task + frozen audio file(s) + speaker metadata
-where permitted + verified English %) × both architectures. Multi-turn tasks
-run all turns in one session per architecture with fresh business state per
-trial (fresh `Session` ⇒ fresh order store + tool registry; heavy providers
-shared). Trial IDs are namespaced per architecture (`<trial>-baseline`,
-`<trial>-streaming`).
+CSV + JSONL exports use fixed columns; batch and live runs are stamped with
+`audio_mode` and analysed separately.
 
-## 9. Metrics (per `TrialRecord`)
+## 8. Error categories
 
-`architecture, trial_id, task_id, task_family, declared/measured_condition,
-condition_consistent, verified/measured_english_pct, reference_transcript,
-asr_transcript, wer, task_success, task_score, failure_category (+detail),
-speech_end_utc, response_audio_utc, audio_mode, latency_s, asr/llm/tools/tts
-ms, tool_calls, per-turn detail, error`. Batch file runs stamp
-`audio_mode=batch-synth` (audio READY, not played); live runs stamp
-first-sample-to-device. The two endpoints are never mixed in analysis.
+The ten locked categories in `research/failure.py` remain the taxonomy.
+Auto-classification starts human coding; it does not replace it. Late trials are
+recorded as failures with the metric that tripped recorded in `failure_detail`.
 
-## 10. Error categories
+## 9. Logging and reproducibility
 
-The ten locked categories in `research/failure.py`, auto-classified by
-`classify_failure` (conservative; `other` + human override when evidence is
-insufficient). Auto-coding starts human coding; it does not replace it.
+One JSONL line per record + flat CSV under the run directory. No secrets or
+participant data in logs. A run is reproducible iff `freeze.json`, database
+snapshot, prompt copy, task/trial files, audio, conditions snapshot, software
+versions, and exact model identifiers are archived together. Hosted-model
+nondeterminism is documented, not hidden.
 
-## 11. Logging format
+## 10. Development vs formal research data
 
-- Research turns: existing session log (unchanged).
-- Experiment output: one JSONL line per record (`write_jsonl`) + flat CSV
-  (`records_to_csv`, fixed columns) under an experiment run directory.
-- Streaming diagnostics: per-turn dev JSONL trace (`stream/trace.py`) with
-  the full §11 event set; development only, never the dataset.
-- No API keys or secrets are ever written to any log (names/versions only).
+Development (allowed now): unit/acceptance tests with fakes, synthetic audio,
+single-turn smoke runs labelled `dev-smoke`, pilot variability inspection.
+Formal research data (NOT started): human-participant audio, frozen execution,
+statistics reported as findings. `data/pilot/` is synthetic and must never be
+cited as evidence.
 
-## 12. Reproducibility requirements
+## 11. Commands
 
-A run is reproducible iff: `freeze.json` + database snapshot + prompts copy +
-`trials.yaml` + `tasks.yaml` + audio files + `conditions.yaml` snapshot are
-archived together. Rerunning the same frozen inputs must reproduce the same
-records up to hosted-model nondeterminism (documented, not hidden).
+```powershell
+python scripts/run_experiment.py validate --trials data/pilot/trials.yaml --tasks data/pilot/tasks.yaml
+python scripts/run_experiment.py dist --trials data/pilot/trials.yaml
+python scripts/run_experiment.py run --trials data/pilot/trials.yaml --tasks data/pilot/tasks.yaml --out runs/<run-id>/
+```
 
-## 13. Development tests vs formal research data
+## 12. Open items requiring researcher approval
 
-Development (allowed now): unit/acceptance tests with fakes, synthetic
-Edge-TTS controls, single-turn smoke runs labeled `dev-smoke`, pilot
-distribution inspection. Formal research data (NOT started): human-participant
-audio, frozen pilot execution, any statistics reported as findings. The
-`data/pilot/` directory is synthetic by construction (see its README) and
-must never be cited as evidence.
-
-## 14. Commands (`scripts/run_experiment.py`)
-
-Validate a dataset:
-`python scripts/run_experiment.py validate --trials data/pilot/trials.yaml --tasks data/pilot/tasks.yaml`
-Show the verified-percentage distribution (boundary evidence, chooses nothing):
-`python scripts/run_experiment.py dist --trials data/pilot/trials.yaml`
-Run the experiment (freezes config, re-validates, writes JSONL + CSV):
-`python scripts/run_experiment.py run --trials data/pilot/trials.yaml --tasks data/pilot/tasks.yaml --out runs/<run-id>/ [--only-trial <id>] [--llm-model <model>] [--asr-language <code>]`
-Overrides such as `--llm-model` exist only because the shipped default model
-is not hosted at the dev endpoint; every override is recorded in
-`freeze.json`, so runs stay reproducible and auditable.
-
-## 15. Open items requiring researcher approval
-
-1. Freezing C0–C4 numeric boundaries after pilot-distribution inspection.
-2. Beam-5 vs greedy as a formal factor (currently dev-only toggle).
-3. Latency-failure threshold (`latency_failure_seconds`, default 120s) and
-   ASR-failure WER threshold (default 0.5) for `classify_failure`.
-4. Any human-participant collection (consent, protocol, storage).
-5. Full pilot execution (currently: infrastructure + one smoke trial only).
+1. Choose the weak and strong models (with recorded selection criteria).
+2. Freeze the final research question and title.
+3. Fix trial counts and exclusions before formal collection.
+4. Define first-audio and turn-completion failure thresholds (P-10).
+5. Approve component ablation plan before making component-level claims.
+6. Approve any human-participant collection (consent, protocol, storage).
+7. Confirm the status of superseded C0–C4 material (secondary analysis vs
+   historical only) — default: historical only.

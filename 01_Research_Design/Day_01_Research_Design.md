@@ -5,6 +5,15 @@
 **Status:** Initial design record. All items below reflect decisions made by the
 researcher on Day 1. Anything not yet fixed is marked **PROVISIONAL**.
 
+> **SUPERSEDED 2026-11-18 — HISTORICAL RECORD, NOT THE CURRENT DESIGN.**
+> The current authoritative direction is
+> `01_Research_Design/Current_Direction.md`. The study now evaluates **agent
+> architecture × language-model capability** for task accuracy, latency, and
+> cost. It does **not** use Egyptian Arabic–English code-switching intensity as
+> the independent variable. The C0–C4 material below is preserved for
+> auditability and possible secondary analysis only; do not cite it as the
+> current design or delete it.
+
 ---
 
 ## 1. Research Question
