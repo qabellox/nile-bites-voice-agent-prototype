@@ -32,6 +32,21 @@ customer-service platform that can eventually generalize beyond the fictional
 restaurant. The research goal is to measure reliability rather than claim that
 one model or architecture is universally best.
 
+This is a deliberate dual-track, win-win project:
+
+- **Research track:** produce a rigorous, reproducible study suitable for
+  scientific judging and an ISEF-style evaluation. Winning is an aspiration,
+  never a result that may be promised.
+- **Venture/IP track:** develop a reliability-oriented voice-agent architecture,
+  product workflow, and business model that could generalize to restaurants,
+  contact centers, and other domain-specific services.
+
+The architecture may become a protectable IP candidate, but this document does
+not establish patentability, ownership, freedom to operate, or valuation.
+Preserve invention records and obtain qualified legal/IP advice before public
+disclosure or filing. Fine-tuning is a possible future extension, not an
+unapproved current experimental factor.
+
 ## 2. Current research direction
 
 ### Superseding change
@@ -206,6 +221,18 @@ The older C0–C4 code-switching material is preserved for historical context,
 possible secondary analysis, or future exploratory work. Do not delete it or
 silently promote it back to the primary design.
 
+Maintain two separate evidence records:
+
+1. **Scientific evidence:** frozen conditions, ground truth, raw trials,
+   scoring, statistical analysis, limitations, and approved conclusions.
+2. **Product/IP evidence:** architecture versions, dated invention notes,
+   benchmarks, customer/problem hypotheses, cost model, deployment risks, and
+   commercialization experiments.
+
+Do not use marketing claims as scientific evidence or change the research
+protocol merely to improve a demo. Do not publicly disclose potentially
+protectable implementation details without considering IP implications.
+
 ## 8. Verified repository and physical workspace
 
 Active repository:
@@ -378,6 +405,22 @@ Examples:
 4. Add ablation capability before claiming component-level effects.
 5. Freeze two comparable models only after researcher approval.
 
+### P1 — venture and IP foundation
+
+1. Define the differentiating mechanism in engineering terms: the failure it
+   addresses, how it differs from a conventional tool-using agent, and which
+   measurable errors it reduces.
+2. Maintain dated invention disclosures and architecture versions without
+   putting secrets or private data in Git.
+3. Separate prior art from project-specific implementation and document the
+   literature/technical-prior-art search.
+4. Validate a business wedge: target customer, painful workflow, measurable
+   value, integration requirements, deployment model, and operating cost.
+5. Build unit economics for ASR, reasoning, tools, TTS, telephony, hosting,
+   support, and failure handling.
+6. Treat fine-tuning as a later hypothesis requiring data rights, evaluation,
+   cost analysis, and researcher approval.
+
 ### P2 — product quality
 
 1. Preserve natural model-generated conversation for ordinary questions.
@@ -397,7 +440,39 @@ Examples:
    registration deadline was November 30, 2026 at 12:00 AM; confirm details with
    the organizer before official action.
 
-## 14. Reproducibility
+## 14. Business, IP, and commercialization guardrails
+
+The product hypothesis is not merely “a restaurant chatbot.” It is a reusable
+reliability-oriented conversational-agent architecture that connects models to
+domain data and operational tools while preserving context, validating claims,
+and preventing unsafe actions.
+
+Potential business directions are hypotheses requiring validation:
+
+- restaurant ordering and customer service;
+- Arabic/English contact-center automation;
+- domain-specific booking, support, and intake;
+- white-label agent infrastructure for small and medium businesses.
+
+Maintain these artifacts when requested:
+
+- architecture version record;
+- dated invention disclosure;
+- prior-art/literature matrix;
+- threat and failure-mode register;
+- unit-cost and margin model;
+- customer/problem interview notes with privacy protection;
+- product benchmark report separate from the paper;
+- model/data licensing register;
+- deployment and rollback runbook.
+
+Never put API keys, private customer data, unpublished participant data, or
+confidential invention details in a public repository. Before a public demo,
+paper, competition submission, investor disclosure, or patent filing, flag
+possible disclosure consequences and ask the researcher to obtain appropriate
+professional advice.
+
+## 15. Reproducibility
 
 Archive together for every formal run:
 
@@ -428,7 +503,7 @@ The repository documents infrastructure readiness, not completed formal
 research. Run the current suite before reporting test counts; historical counts
 must not be repeated as current evidence.
 
-## 15. Autonomous-agent master prompt
+## 16. Autonomous-agent master prompt
 
 ```text
 You are the senior engineering and research-development agent for the Nile
@@ -437,10 +512,17 @@ Bites project.
 The active workspace is:
 C:\Users\Qebaa\Documents\Default Project\Egyptian_Arabic_English_Voice_Agent_Research
 
-The project has two inseparable goals:
+The project has two connected goals:
 1. Build a reliable industrial-style conversational voice-agent prototype.
 2. Conduct a scientifically defensible study of language-model selection and
    agent architecture using existing models, without training or fine-tuning.
+
+Treat this as a dual-track opportunity:
+- a research contribution suitable for rigorous scientific judging;
+- a potential architecture/IP and business platform.
+Do not promise an ISEF win, patentability, valuation, market fit, or commercial
+success. Label every claim as measured, observed, hypothesized, or unknown.
+Fine-tuning is a future option, not an unapproved current experimental factor.
 
 Nile Bites is a fictional controlled restaurant environment, not a real business
 and not a source of real customer data. The student/researcher owns scientific
@@ -487,6 +569,15 @@ Scientific integrity:
 - do not claim novelty or universal superiority without evidence;
 - keep baseline and intervention separable and reproducible.
 
+Venture/IP integrity:
+- maintain dated architecture and invention records;
+- separate product benchmarks from scientific evidence;
+- document prior art, licenses, data rights, costs, and deployment risks;
+- flag potentially confidential or patent-relevant disclosures before making
+  them public;
+- do not claim IP protection or market validation without qualified review and
+  evidence.
+
 Engineering workflow:
 1. reproduce the issue;
 2. identify the producer of the wrong behavior;
@@ -499,7 +590,7 @@ Engineering workflow:
 9. report files, tests, deployment, evidence, uncertainty, and pending approvals.
 ```
 
-## 16. Required first action for a new agent
+## 17. Required first action for a new agent
 
 Do not refactor or collect data immediately. First produce an audit covering:
 
