@@ -24,12 +24,14 @@ from .base import (
     describe_engine,
     selected_engine,
 )
+from .gateway import ToolGateway
 
 __all__ = [
     "A1_COMPONENTS",
     "ENGINE_A0",
     "ENGINE_A1",
     "KNOWN_ENGINES",
+    "ToolGateway",
     "TurnEngine",
     "build_turn_engine",
     "describe_engine",

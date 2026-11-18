@@ -19,7 +19,7 @@ files it points to. It stores verified state and pointers, never the full docs.
     commit re-syncs both.
 - Deployment: `https://nile-bites-voice-agent-prototype-ui.vercel.app`
   `/healthz` → `{ok:true, service:"nbva-phone-prototype"}` (verified 2026-11-18).
-- Suite: **428 tests, 0 failures, 0 errors, 0 skipped, exit 0**
+- Suite: **444 tests, 0 failures, 0 errors, 0 skipped, exit 0**
   (verified 2026-11-18 via `--junitxml`). Re-run before quoting counts.
 - `.env` present, untracked; `.gitignore` covers secrets, logs, audio, run outputs.
 
@@ -106,6 +106,18 @@ Browser mic → browser SpeechRecognition (ar-EG) → POST /api/chat {transcript
   `describe()["architecture"]`. Tests: `tests/test_architecture.py`.
 - **Phase 2 = A1 components**, one at a time, flag-gated + observable, no
   component-level claims until ablations run.
+  - **2a gateway DONE** (`src/nbva/arch/gateway.py`): schema validation before
+    dispatch, numeric-string coercion, `create_order` dedup, per-call timing.
+    Parity test: `llm_schemas()` identical to the registry. `enabled=False` is a
+    pure pass-through. 16 tests in `tests/test_gateway.py`.
+  - 2b context, 2c validation, 2d orchestration (its own loop; parallel reads
+    flag default OFF), 2e latency path (sentence TTS), 2f assembly + no-silent-
+    fallback suite. Spec: `08_Intervention/PHASE2_A1_DESIGN.md`.
+- **Stats design (paired) proposed:** `08_Intervention/STATISTICAL_DESIGN_PAIRED.md`
+  — randomized complete block design, task = unit, order schedule seeded +
+  hashed, task-level clustering. **P-11 corrected:** a denominator of 1.0 is
+  defined; the problem is zero estimated variance → anti-conservative intervals;
+  bootstrap does NOT fix it. Method + boundary rule still unselected.
 - **P0 safety:** structured intent extraction (item, qty, zone, confidence,
   clarification) + field validation vs transcript + DB; preview/confirm;
   idempotency; provider health/quota/401/402/429 monitoring; server-side Arabic ASR.
@@ -136,3 +148,4 @@ Browser mic → browser SpeechRecognition (ar-EG) → POST /api/chat {transcript
 | 2026-11-18 | 1716cf5 | Removed code-switching as primary design; new Current_Direction + rewritten protocol; old archived; decision log updated | doc review; tests 418/0 |
 | 2026-11-18 | plan commit | `08_Intervention/IMPLEMENTATION_PLAN_A0_A1_P0.md` written (H3 margin options, H2 falsifiable, claim scope, cost method, A0/A1 parity, P0, phases) — **awaiting researcher approval; no code touched** | doc review; no code changes |
 | 2026-11-18 | (this commit) | Researcher decisions recorded (ratio ≥0.90, task-script confirmation, LLM+hosted TTS, first-audio-ready) + P-11 opened; Phase 1 engine switch implemented | pytest 428/0; a1 refuses; A0 parity test |
+| 2026-11-18 | (next commit) | Paired statistical design + Phase 2 spec written; **P-11 corrected** (ratio not undefined; boundary variance is); Stage 2a tool gateway implemented | pytest 444/0; schema parity; disabled gateway == baseline |

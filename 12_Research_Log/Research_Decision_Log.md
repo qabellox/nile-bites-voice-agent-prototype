@@ -234,9 +234,15 @@ and is scale-free across task families.
 
 **Consequence that must be recorded.** The ratio is stricter in absolute terms
 when accuracy is low (0.90 of p = 0.70 is a 7 pp gap; of p = 0.90 it is a 9 pp
-gap), and it is **undefined when p(S·A0) = 1.0**. The confidence-interval method
-and the zero-denominator rule must be fixed before formal collection; tracked as
-P-11.
+gap) and looser at the ceiling (10 pp at p = 1.0). The confidence-interval method
+and the boundary rule must be fixed before formal collection; tracked as P-11.
+
+**Correction 2026-11-18.** An earlier version of this entry said the ratio is
+"undefined when p(S·A0) = 1.0". That was wrong: a denominator of 1.0 is well
+defined. The real issue is that the denominator's variance is then estimated as
+zero, which makes delta-method intervals anti-conservative. See P-11 in
+`12_Research_Log/Pending_Decisions_For_Researcher.md` and
+`08_Intervention/STATISTICAL_DESIGN_PAIRED.md` §5.
 
 **Decision 2 — confirmation belongs to the task script.** Where a task requires
 preview/confirm before a mutation, the confirmation turn is written into the

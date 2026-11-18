@@ -140,5 +140,6 @@ python scripts/run_experiment.py run --trials data/pilot/trials.yaml --tasks dat
 6. Approve any human-participant collection (consent, protocol, storage).
 7. Confirm the status of superseded C0–C4 material (secondary analysis vs
    historical only) — default: historical only.
-8. P-11 — the CI method for the accuracy ratio and the rule for
-   `p(S·A0) = 1.0`, where the ratio is undefined.
+8. P-11 — the CI method for the accuracy ratio and the pre-registered boundary
+   rule (a perfect reference arm makes the denominator's variance estimate zero,
+   not the ratio undefined).

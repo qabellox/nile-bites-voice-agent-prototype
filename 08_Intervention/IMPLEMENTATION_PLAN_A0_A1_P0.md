@@ -288,6 +288,15 @@ Not done in Phase 1, by design: no A1 components, no token-usage capture, no
 unified latency construct (the runner still sums spans for the baseline), no
 runner change, no writes to `runs/` or `data/pilot/`.
 
+### Phase 2 — in progress
+
+Spec: `08_Intervention/PHASE2_A1_DESIGN.md`. Statistical design:
+`08_Intervention/STATISTICAL_DESIGN_PAIRED.md`.
+
+- **2a gateway — DONE.** `src/nbva/arch/gateway.py`, 16 tests.
+- 2b context, 2c validation, 2d orchestration, 2e latency path, 2f assembly —
+  specified, not implemented.
+
 ### Phase 2 — next
 
 A1 components, one at a time, each flag-gated and observable. Confirmation is

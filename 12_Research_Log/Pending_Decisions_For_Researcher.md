@@ -258,41 +258,52 @@ implementation commit with tests.
 
 ---
 
-## P-11 — How the accuracy-ratio CI is computed, and what happens when the reference arm is perfect
+## P-11 — How the accuracy-ratio CI is computed, and how the boundary is handled
 
 **How it became a decision.** On 2026-11-18 the researcher set the H3 criterion
-as *accuracy ratio ≥ 0.90 on the lower 95% CI bound* (decision log, same date).
-That fixes the estimand but not the estimator. Two problems follow from using a
-ratio instead of a difference.
+as *accuracy ratio ≥ 0.90 on the lower 95% CI bound*. That fixes the estimand but
+not the estimator.
 
-**Problem 1 — the ratio is undefined when `p(S·A0) = 1.0`.** If the strong model
-plus the baseline succeeds on every trial, the denominator is 1.0 and every
-candidate value of the numerator gives the same ratio. With a 30-task set and a
-strong model this is a realistic outcome, so the rule cannot be an afterthought.
+**Correction, same day.** An earlier version of this note claimed that a
+strong-baseline success proportion of 1.0 makes the ratio **undefined**. That is
+wrong. `1.0` is a perfectly good denominator: θ̂ = p̂(M·A1) / 1 = p̂(M·A1). The
+record was corrected rather than quietly edited.
 
-**Problem 2 — the CI method changes the answer.** A Wald interval on a ratio of
-proportions is badly behaved near 0 and 1. The usual alternatives are:
+**The actual problem — boundary inference.** With `n` trials all successful,
+`p̂_S = 1` and the plug-in variance `p̂_S(1 − p̂_S)/n` is **0**, so every
+delta-method interval treats the denominator as known exactly. It is not: 30/30
+successes gives a 95% Clopper–Pearson interval of roughly **[0.885, 1.000]**. A
+reference arm that is truly 0.89 would turn the same numerator from 0.95 into
+0.85, which fails the criterion. The intervals are therefore **anti-conservative
+exactly when the data look most perfect**.
 
-1. **Katz log method** — CI on `log(ratio)`, then exponentiate. Simple,
-   well-documented, degenerates when either cell is 0.
-2. **Bootstrap** (BCa or percentile) — resample trials, recompute the ratio.
-   Handles the boundary better; needs a fixed seed and resample count.
-3. **Paired design** — if the same tasks run in both cells, a matched analysis
-   (McNemar-style for differences; paired bootstrap for ratios) is substantially
-   more powerful than independent groups.
+**Bootstrap does not fix it.** Resampling 30 successes always yields `p̂_S = 1`, so
+the bootstrap distribution of θ̂ collapses to the distribution of the numerator —
+the same too-narrow answer. An earlier suggestion that bootstrap solves the
+boundary was wrong and is retracted.
 
-**The decision needed.** Choose the CI method, the resample count and seed if
-bootstrap, the rule for `p(S·A0) = 1.0` (e.g. fall back to the absolute
-difference with the implied δ, or pre-register a floor), and whether the design
-is paired or independent. Then the required n can be computed honestly instead
-of quoted as a range.
+**The estimand is also lenient at the ceiling.** 0.90 of a perfect reference
+permits a 10 pp absolute loss, against 7 pp when the reference sits at 0.70. The
+absolute difference must be reported alongside the ratio so the magnitude is
+visible.
+
+**Methods considered** (full assumptions and limitations in
+`08_Intervention/STATISTICAL_DESIGN_PAIRED.md` §5.4): paired cluster bootstrap;
+delta method on log θ with paired covariance; MOVER-R / Newcombe hybrid score;
+Bayesian Beta–Binomial with Jeffreys prior; exact conditional (McNemar-type) on
+discordant pairs for the difference only.
+
+**The decision needed.** Choose the method, and fix the **boundary rule in
+advance** — deciding after seeing a perfect reference arm which method to use is
+selection bias. Also decide whether the design is fully paired and whether the
+analysis unit is the task or the (task, repetition) pair.
 
 **Why it is not the coding agent's decision.** It changes what counts as
-supporting H3, which is a scientific choice. The current code makes no such
-choice: nothing computes an accuracy ratio yet, and no default is wired in.
+supporting H3. No ratio is computed anywhere in the code today, and no default is
+wired in.
 
-**Cost of deferring.** A1 can be built with the estimand either way, so this
-blocks analysis and the sample-size calculation, not implementation.
+**Cost of deferring.** Blocks analysis and the sample-size calculation, not
+implementation.
 
 ---
 
