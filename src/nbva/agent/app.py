@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from ..asr.providers import build_asr
+from ..arch.base import TurnEngine, build_turn_engine, describe_engine
 from ..config.loader import Config, load_config, project_root
 from ..db.repository import RestaurantRepository
 from ..llm.providers import build_provider
@@ -21,7 +22,6 @@ from ..research.codeswitch import build_analyzer
 from ..research.conditions import ConditionSet, load_conditions
 from ..research.wer import wer_config_from_config
 from ..tts.providers import build_tts
-from .pipeline import BaselinePipeline
 from .prompts import load_system_prompt
 from .session import Session, create_session
 
@@ -37,7 +37,7 @@ class AgentApp:
     config: Config
     repository: RestaurantRepository
     session: Session
-    pipeline: BaselinePipeline
+    pipeline: TurnEngine
     logger: SessionLogger
     asr: Any
     llm: Any
@@ -46,6 +46,10 @@ class AgentApp:
     player: Any = None
 
     # -- reporting --------------------------------------------------------
+    @property
+    def engine_id(self) -> str:
+        return str(getattr(self.pipeline, "engine_id", "a0"))
+
     def describe(self) -> dict[str, Any]:
         return {
             "experiment_id": self.session.experiment_id,
@@ -53,6 +57,7 @@ class AgentApp:
             "participant_id": self.session.participant_id,
             "session_id": self.session.session_id,
             "business_weekday": self.session.business_weekday,
+            "architecture": describe_engine(self.pipeline),
             "restaurant_dataset": {
                 "dataset_id": self.repository.data.meta.dataset_id,
                 "data_version": self.repository.data.meta.data_version,
@@ -142,7 +147,7 @@ def build_app(
             write_manifest=bool(log_cfg.get("write_run_manifest", True)),
         )
 
-    pipeline = BaselinePipeline(
+    pipeline_kwargs: dict[str, Any] = dict(
         session=session,
         asr=asr,
         llm=llm,
@@ -160,6 +165,10 @@ def build_app(
         if (config.section("logging") or {}).get("save_audio", True)
         else None,
     )
+    # The architecture factor is selected here and nowhere else. Both arms get
+    # the identical bundle above, so a difference between cells cannot come from
+    # a difference in providers, tools, prompt, or limits.
+    pipeline = build_turn_engine(config, pipeline_kwargs)
 
     return AgentApp(
         config=config,

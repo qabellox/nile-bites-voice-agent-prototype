@@ -237,6 +237,20 @@ Two settings are deliberately conservative:
   the day. Development tasks pin it per task. `preflight` refuses a research run
   that has not.
 
+`architecture.engine` selects the experiment arm and is the only place the arm is
+chosen:
+
+| Value | Meaning |
+|-------|---------|
+| `a0` (default) | Conventional sequential baseline — `BaselinePipeline`, frozen |
+| `a1` | Reliability/efficiency architecture — **not implemented yet** |
+
+Both arms are built from the same providers, tools, database, prompt and limits,
+so a difference between cells cannot come from configuration drift. Selecting
+`a1` raises rather than falling back to `a0`: a silent fallback would record
+baseline behaviour under the intervention label, and no analysis could undo that.
+See `08_Intervention/IMPLEMENTATION_PLAN_A0_A1_P0.md`.
+
 ### Ground rules enforced in code
 
 These are not conventions the agent is trusted to follow; the code refuses to

@@ -42,13 +42,21 @@ equivalence test on the risk difference with a pre-registered margin δ:
 Report the point estimate and a 95% CI. "Approaches" is claimed only if the
 lower CI bound exceeds −δ. A superiority claim requires the lower bound > 0.
 
-**Candidate margins (choose ONE, or define another; none is selected here):**
+**Decision 2026-11-18 (researcher): relative margin, not absolute.**
 
-| Option | Margin | Meaning |
-|---|---|---|
-| A | δ = 5 percentage points absolute | Strict practical equivalence |
-| B | δ = 10 percentage points absolute | Lenient equivalence |
-| C | accuracy ratio ≥ 0.90 (lower 95% CI) | Relative non-inferiority |
+The criterion is the **accuracy ratio**: the lower bound of the 95% CI on
+`p(M·A1) / p(S·A0)` must be **≥ 0.90**.
+
+- "Approaches" is claimed only when that lower bound holds.
+- A ratio significantly above 1.0 is not a superiority claim without a separate
+  test.
+- The absolute difference is still reported alongside, because the ratio hides
+  magnitude (0.90 of p = 0.70 is a 7 pp gap; of p = 0.90 it is a 9 pp gap).
+- The CI method and the `p(S·A0) = 1.0` rule are **not yet fixed** — tracked as
+  P-11, blocking analysis and sample size, not implementation.
+
+**Superseded options** (kept for the record, not in force): δ = 5 pp absolute;
+δ = 10 pp absolute.
 
 **Lower cost condition.** The "at lower cost" part requires a second,
 separately approved rule (e.g., cost per successful task ratio ≤ some margin).
@@ -148,18 +156,15 @@ Both engines implement one interface and return the same `PipelineResult` /
 5. **Latency path** — token streaming, sentence-level TTS, first-audio priority.
    Must not bypass tools, validation, or grounding.
 
-### Confirmation policy (needs researcher decision)
+### Confirmation policy (DECIDED 2026-11-18: Option 1)
 
-Preview/confirm before mutation can add a user turn. To keep arms comparable:
+The confirmation turn is part of the frozen task script and is shown identically
+to A0 and A1. No arm gets a longer or shorter interaction budget, and A0 is not
+excluded from confirming. A1 may not request extra confirmations beyond the
+frozen script; doing so is an interaction-budget violation and is logged.
 
-- **Option 1 (recommended for the experiment):** the confirmation turn is part of
-  the task script and is shown identically to both arms.
-- **Option 2:** confirmation is internal validation with no extra user turn.
-- **Option 3:** A1 may request confirmation dynamically; then the interaction
-  budget differs and the comparison must account for it.
-
-Do not implement until the researcher chooses. A1 must never receive an easier
-interaction than A0.
+Options 2 (internal validation) and 3 (dynamic request) are recorded as rejected
+alternatives for this design.
 
 ### Switchability
 
@@ -239,10 +244,52 @@ existing run data.
 
 ## 11. Decisions required before the affected phase
 
-1. H3 margin (A/B/C or other) and the lower-cost rule — before Phase 4.
-2. Confirmation policy (Option 1/2/3) — before Phase 2 validation component.
-3. Whether A1 may stream TTS in batch and the exact first-audio endpoint — before
-   Phase 4.
-4. P-10 thresholds — before any formal run.
-5. Model pair — before the 2×2 run.
-6. Cost scope (ASR/TTS/telephony inclusion) — before Phase 4.
+**Resolved 2026-11-18 (researcher):** H3 criterion = accuracy ratio ≥ 0.90
+(lower 95% CI); confirmation = task script, identical in both arms; cost scope =
+LLM + hosted TTS; first-audio endpoint = first audio ready.
+
+**Still open:**
+
+1. **P-11** — CI method for the accuracy ratio and the `p(S·A0) = 1.0` rule.
+   Blocks analysis and the sample-size calculation, not implementation.
+2. Whether the design is **paired** (same tasks in all four cells) — changes
+   required n substantially.
+3. **P-10** latency-failure thresholds — before any formal run.
+4. **Model pair** — before the 2×2 run.
+5. Final question/title freeze.
+
+---
+
+## 12. Status log
+
+### Phase 1 — DONE 2026-11-18
+
+Delivered:
+
+- `src/nbva/arch/base.py` — `TurnEngine` protocol, `selected_engine`,
+  `build_turn_engine`, `describe_engine`, and `A1_COMPONENTS` as the single
+  declared list of ablation switches.
+- `src/nbva/arch/a1.py` — placeholder that raises on construction.
+- `src/nbva/agent/app.py` — builds through the factory from one
+  `pipeline_kwargs` bundle; `AgentApp.engine_id`; `describe()` now reports
+  `{"architecture": {"engine": ..., "components": ...}}`.
+- `config/main.yaml` — `architecture.engine: "a0"`.
+- `tests/test_architecture.py` — 10 tests: default, normalisation, unknown
+  rejection, A1 refusal, A0 identity, describe, and A0 parity through the
+  factory.
+
+**`src/nbva/agent/pipeline.py` was not edited.** A0 is the untouched baseline;
+only the construction path changed.
+
+Verification: **428 tests, 0 failures, 0 errors, 0 skipped** (418 pre-existing
++ 10 new).
+
+Not done in Phase 1, by design: no A1 components, no token-usage capture, no
+unified latency construct (the runner still sums spans for the baseline), no
+runner change, no writes to `runs/` or `data/pilot/`.
+
+### Phase 2 — next
+
+A1 components, one at a time, each flag-gated and observable. Confirmation is
+already decided (task script), so the validation layer can be built without
+waiting.

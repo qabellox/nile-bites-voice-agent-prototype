@@ -218,7 +218,49 @@ described as such.
 
 **Affects collected data?** No — no formal research data has been collected.
 
+### 2026-11-18 — Operational decisions for the 2 × 2
+
+**Recorded from the researcher's direct answers during the 2026-11-18 session;
+transcribed by the coding agent. The researcher should edit the wording if it
+does not match their intent.**
+
+**Decision 1 — the H3 criterion is relative, not absolute.** Operational form:
+the lower bound of the 95% confidence interval on the ratio
+`p(M·A1) / p(S·A0)` must be ≥ 0.90. "Approaches" is claimed only when that bound
+holds. A ratio significantly above 1.0 is not reported as superiority without a
+separate test. Rationale: the ratio states the claim in the researcher's own
+terms — the weak model retains at least 90% of the strong model's success rate —
+and is scale-free across task families.
+
+**Consequence that must be recorded.** The ratio is stricter in absolute terms
+when accuracy is low (0.90 of p = 0.70 is a 7 pp gap; of p = 0.90 it is a 9 pp
+gap), and it is **undefined when p(S·A0) = 1.0**. The confidence-interval method
+and the zero-denominator rule must be fixed before formal collection; tracked as
+P-11.
+
+**Decision 2 — confirmation belongs to the task script.** Where a task requires
+preview/confirm before a mutation, the confirmation turn is written into the
+frozen task and is shown identically to A0 and A1. No arm receives a longer or
+shorter interaction budget, and A0 is not excluded from confirming.
+
+**Decision 3 — cost scope is LLM + hosted TTS.** These are the two real variable
+cash costs on the measured path. Browser ASR and any local inference are recorded
+as compute time, never as cash. Telephony and hosting are fixed costs, reported
+separately and excluded from variable cost per successful task.
+
+**Decision 4 — "first audio" means first audio ready.** In batch runs A0 stamps
+the moment full synthesis completes; A1 stamps the moment its first
+sentence-length chunk is synthesized. Both mean "the first audio a caller could
+hear". Full-utterance-ready is a different measurement and is not used as
+first-audio latency.
+
+**Affects collected data?** No — no formal research data has been collected.
+
 | Date | Modifies | Change | Rationale | Affects collected data? |
 |------|----------|--------|-----------|--------------------------|
 | 2026-11-18 | D1-01, D1-05, D1-06, D1-07 | Architecture × model capability replaces code-switching intensity as the primary design | Architecture can compensate for model weakness; code-switching is environment, not IV | No |
+| 2026-11-18 | D1-01 (H3) | H3 margin set as accuracy ratio ≥ 0.90 on the lower 95% CI bound | Scale-free; matches "retains ≥90% of the strong model's success rate" | No |
+| 2026-11-18 | — | Confirmation turn fixed inside the task script, identical for A0 and A1 | Keeps the interaction budget equal across arms | No |
+| 2026-11-18 | — | Cost scope = LLM + hosted TTS; compute time and fixed costs excluded | Only cash spend on the measured path counts as variable cost | No |
+| 2026-11-18 | — | First-audio endpoint = first audio ready (per-arm synthesis point) | Equals what a caller hears first; fair to both arms | No |
 

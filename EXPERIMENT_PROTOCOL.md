@@ -29,14 +29,29 @@ both must support the same tool interface and comparable settings.
 business state (order lines, quantities, totals, zone, status, required tools).
 Wording is never graded.
 
-**Secondary.** First-audio latency (`speech_end → first response sample`);
+**Secondary.** First-audio latency (`speech_end → first audio ready`);
 turn-completion latency (`speech_end → final response ready`); cost per
-successful task where consistently measurable. The two latency endpoints are
-recorded and analysed separately and are never mixed.
+successful task. The two latency endpoints are recorded and analysed separately
+and are never mixed.
+
+*Fixed decisions (2026-11-18, researcher):*
+
+- **First-audio endpoint.** Batch runs: A0 stamps completion of full synthesis;
+  A1 stamps its first sentence-length chunk. Both mean "first audio a caller
+  could hear". Full-utterance-ready is never reported as first-audio latency.
+- **Cost scope.** Variable cost = LLM tokens + hosted TTS, the actual cash spend
+  on the measured path. Browser ASR and local inference are recorded as compute
+  time. Telephony and hosting are fixed costs, reported separately.
+  `cost_per_success = total variable cost of all attempts ÷ successes`; failed
+  attempts remain in the numerator. Prices are snapshotted in `freeze.json`.
 
 **Diagnostic.** Tool-selection accuracy, tool-argument accuracy, context
 retention, grounding violations, clarification rate, failure category, token /
 call overhead.
+
+**H3 criterion.** Lower bound of the 95% CI on the ratio `p(M·A1) / p(S·A0)`
+≥ 0.90. The CI method and the zero-denominator rule are fixed under P-11 before
+formal collection.
 
 ## 4. Controlled variables (frozen per experiment)
 
@@ -105,13 +120,25 @@ python scripts/run_experiment.py dist --trials data/pilot/trials.yaml
 python scripts/run_experiment.py run --trials data/pilot/trials.yaml --tasks data/pilot/tasks.yaml --out runs/<run-id>/
 ```
 
-## 12. Open items requiring researcher approval
+## 12. Resolved and open items
+
+**Resolved 2026-11-18 (researcher):**
+
+- H3 criterion — accuracy ratio ≥ 0.90 on the lower 95% CI bound.
+- Confirmation policy — the confirmation turn is part of the frozen task script,
+  shown identically to A0 and A1.
+- Cost scope — LLM + hosted TTS; compute and fixed costs excluded.
+- First-audio endpoint — first audio ready, per-arm synthesis point.
+
+**Still open:**
 
 1. Choose the weak and strong models (with recorded selection criteria).
 2. Freeze the final research question and title.
 3. Fix trial counts and exclusions before formal collection.
 4. Define first-audio and turn-completion failure thresholds (P-10).
-5. Approve component ablation plan before making component-level claims.
+5. Approve the component ablation plan before making component-level claims.
 6. Approve any human-participant collection (consent, protocol, storage).
 7. Confirm the status of superseded C0–C4 material (secondary analysis vs
    historical only) — default: historical only.
+8. P-11 — the CI method for the accuracy ratio and the rule for
+   `p(S·A0) = 1.0`, where the ratio is undefined.

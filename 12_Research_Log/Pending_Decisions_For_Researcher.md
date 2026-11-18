@@ -258,6 +258,44 @@ implementation commit with tests.
 
 ---
 
+## P-11 — How the accuracy-ratio CI is computed, and what happens when the reference arm is perfect
+
+**How it became a decision.** On 2026-11-18 the researcher set the H3 criterion
+as *accuracy ratio ≥ 0.90 on the lower 95% CI bound* (decision log, same date).
+That fixes the estimand but not the estimator. Two problems follow from using a
+ratio instead of a difference.
+
+**Problem 1 — the ratio is undefined when `p(S·A0) = 1.0`.** If the strong model
+plus the baseline succeeds on every trial, the denominator is 1.0 and every
+candidate value of the numerator gives the same ratio. With a 30-task set and a
+strong model this is a realistic outcome, so the rule cannot be an afterthought.
+
+**Problem 2 — the CI method changes the answer.** A Wald interval on a ratio of
+proportions is badly behaved near 0 and 1. The usual alternatives are:
+
+1. **Katz log method** — CI on `log(ratio)`, then exponentiate. Simple,
+   well-documented, degenerates when either cell is 0.
+2. **Bootstrap** (BCa or percentile) — resample trials, recompute the ratio.
+   Handles the boundary better; needs a fixed seed and resample count.
+3. **Paired design** — if the same tasks run in both cells, a matched analysis
+   (McNemar-style for differences; paired bootstrap for ratios) is substantially
+   more powerful than independent groups.
+
+**The decision needed.** Choose the CI method, the resample count and seed if
+bootstrap, the rule for `p(S·A0) = 1.0` (e.g. fall back to the absolute
+difference with the implied δ, or pre-register a floor), and whether the design
+is paired or independent. Then the required n can be computed honestly instead
+of quoted as a range.
+
+**Why it is not the coding agent's decision.** It changes what counts as
+supporting H3, which is a scientific choice. The current code makes no such
+choice: nothing computes an accuracy ratio yet, and no default is wired in.
+
+**Cost of deferring.** A1 can be built with the estimand either way, so this
+blocks analysis and the sample-size calculation, not implementation.
+
+---
+
 ## Implementation notes that are not decisions
 
 These were resolved while building, and are recorded here only so the reasoning

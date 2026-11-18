@@ -19,7 +19,7 @@ files it points to. It stores verified state and pointers, never the full docs.
     commit re-syncs both.
 - Deployment: `https://nile-bites-voice-agent-prototype-ui.vercel.app`
   `/healthz` → `{ok:true, service:"nbva-phone-prototype"}` (verified 2026-11-18).
-- Suite: **418 tests, 0 failures, 0 errors, 0 skipped, 15.0s, exit 0**
+- Suite: **428 tests, 0 failures, 0 errors, 0 skipped, exit 0**
   (verified 2026-11-18 via `--junitxml`). Re-run before quoting counts.
 - `.env` present, untracked; `.gitignore` covers secrets, logs, audio, run outputs.
 
@@ -99,9 +99,13 @@ Browser mic → browser SpeechRecognition (ar-EG) → POST /api/chat {transcript
 
 ## 6. Prioritized next steps
 
-- **AWAITING APPROVAL:** `08_Intervention/IMPLEMENTATION_PLAN_A0_A1_P0.md`.
-  Language-model pair, P0, A0/A1 coding all start on approval. Do not modify
-  `pipeline.py`, `runner.py`, `experiment.py`, or `phone.py` before it.
+- **A0/A1 switch: DONE (Phase 1).** `architecture.engine` in `config/main.yaml`
+  selects the arm via `src/nbva/arch/base.py::build_turn_engine`. A0 = frozen
+  `BaselinePipeline` (untouched file), `a1` raises `NotImplementedError` on
+  purpose — never silently falls back. `AgentApp.engine_id`,
+  `describe()["architecture"]`. Tests: `tests/test_architecture.py`.
+- **Phase 2 = A1 components**, one at a time, flag-gated + observable, no
+  component-level claims until ablations run.
 - **P0 safety:** structured intent extraction (item, qty, zone, confidence,
   clarification) + field validation vs transcript + DB; preview/confirm;
   idempotency; provider health/quota/401/402/429 monitoring; server-side Arabic ASR.
@@ -131,3 +135,4 @@ Browser mic → browser SpeechRecognition (ar-EG) → POST /api/chat {transcript
 | 2026-11-18 | a80912e | Cache created after handoff audit | pytest 418/0; /healthz ok; git remotes |
 | 2026-11-18 | 1716cf5 | Removed code-switching as primary design; new Current_Direction + rewritten protocol; old archived; decision log updated | doc review; tests 418/0 |
 | 2026-11-18 | plan commit | `08_Intervention/IMPLEMENTATION_PLAN_A0_A1_P0.md` written (H3 margin options, H2 falsifiable, claim scope, cost method, A0/A1 parity, P0, phases) — **awaiting researcher approval; no code touched** | doc review; no code changes |
+| 2026-11-18 | (this commit) | Researcher decisions recorded (ratio ≥0.90, task-script confirmation, LLM+hosted TTS, first-audio-ready) + P-11 opened; Phase 1 engine switch implemented | pytest 428/0; a1 refuses; A0 parity test |

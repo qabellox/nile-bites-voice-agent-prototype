@@ -31,6 +31,23 @@ experiment:
   # condition. Pin an explicit weekday before any data collection.
   business_weekday: "auto"   # auto | monday | tuesday | ... | sunday
 
+architecture:
+  # Which turn engine build_app() constructs. This is the ARCHITECTURE factor of
+  # the 2x2 design; it is the only place the arm is selected.
+  #
+  #   a0 = conventional sequential baseline. The frozen BaselinePipeline:
+  #        full-utterance ASR -> one LLM tool loop -> deterministic tools ->
+  #        complete TTS -> playback. This is the default and the only
+  #        implemented arm today.
+  #   a1 = reliability/efficiency architecture (context manager, orchestration,
+  #        structured tool gateway, validation layer, latency path). NOT
+  #        IMPLEMENTED YET: selecting it raises instead of falling back to a0,
+  #        so a run can never be mislabelled with an arm it did not execute.
+  #
+  # Both arms are built from the same providers, tools, database, prompt, and
+  # limits; only this value differs between cells.
+  engine: "a0"
+
 runtime:
   # Console/logs must be UTF-8 to print Arabic correctly on Windows.
   force_utf8_stdout: true
