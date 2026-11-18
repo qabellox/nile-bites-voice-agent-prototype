@@ -10,7 +10,8 @@ files it points to. It stores verified state and pointers, never the full docs.
 ## 1. Verified state — snapshot 2026-11-18
 
 - Workspace: `C:\Users\Qebaa\Documents\Default Project\Egyptian_Arabic_English_Voice_Agent_Research`
-- Branch `main`, HEAD `a80912e` ("Add dual track IP and venture strategy").
+- Branch `main`, HEAD `1716cf5` ("docs: supersede code-switching design with
+  architecture x model-capability direction").
 - Remotes:
   - `origin` → `github.com/qabellox/egyptian-arabic-english-voice-agent` (PRIVATE)
   - `prototype` → `github.com/qabellox/nile-bites-voice-agent-prototype` (PUBLIC)
@@ -98,6 +99,9 @@ Browser mic → browser SpeechRecognition (ar-EG) → POST /api/chat {transcript
 
 ## 6. Prioritized next steps
 
+- **AWAITING APPROVAL:** `08_Intervention/IMPLEMENTATION_PLAN_A0_A1_P0.md`.
+  Language-model pair, P0, A0/A1 coding all start on approval. Do not modify
+  `pipeline.py`, `runner.py`, `experiment.py`, or `phone.py` before it.
 - **P0 safety:** structured intent extraction (item, qty, zone, confidence,
   clarification) + field validation vs transcript + DB; preview/confirm;
   idempotency; provider health/quota/401/402/429 monitoring; server-side Arabic ASR.
@@ -125,4 +129,5 @@ Browser mic → browser SpeechRecognition (ar-EG) → POST /api/chat {transcript
 | Date | Commit | Change | Verified by |
 |---|---|---|---|
 | 2026-11-18 | a80912e | Cache created after handoff audit | pytest 418/0; /healthz ok; git remotes |
-| 2026-11-18 | direction-change commit | Removed code-switching as primary design; new Current_Direction + rewritten protocol; old archived; decision log updated | doc review; tests 418/0 |
+| 2026-11-18 | 1716cf5 | Removed code-switching as primary design; new Current_Direction + rewritten protocol; old archived; decision log updated | doc review; tests 418/0 |
+| 2026-11-18 | plan commit | `08_Intervention/IMPLEMENTATION_PLAN_A0_A1_P0.md` written (H3 margin options, H2 falsifiable, claim scope, cost method, A0/A1 parity, P0, phases) — **awaiting researcher approval; no code touched** | doc review; no code changes |
