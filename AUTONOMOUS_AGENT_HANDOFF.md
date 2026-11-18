@@ -1,59 +1,212 @@
-# Nile Bites Voice Agent — Autonomous Agent Handoff Blueprint
+# Nile Bites — Research, Engineering, and Business Handoff
 
-This document is the operational memory and master prompt for an AI coding agent
-continuing the Nile Bites Egyptian Arabic–English voice-agent project. It is
-intentionally self-contained, but the repository files remain the source of
-truth. Do not treat this document as permission to change scientific decisions.
+**Prepared:** 18 November 2026
+**Purpose:** Give a future AI coding/research-development agent the exact
+project vision, verified technical context, scientific boundaries, business
+direction, and operating protocol.
+This is a handoff and working blueprint. The repository and approved research
+records remain authoritative. Provisional ideas in this file are not approved
+scientific decisions.
 
-## 1. Mission
+## 1. Role, ownership, and mission
 
-Build and evaluate a reliable, industrial-quality voice customer-service agent
-for the fictional restaurant **Nile Bites**. The production demonstration should
-support Egyptian Arabic, English, and code-switched speech; answer grounded
-restaurant questions; preserve exact order items and quantities; speak through
-ElevenLabs; and fail safely rather than guess.
+The researcher is a 16-year-old student in Port Said, Egypt. The project has
+two connected parts:
 
-The research project studies how Egyptian Arabic–English code-switching affects:
+1. A working conversational voice-agent prototype demonstrated through the
+   fictional restaurant **Nile Bites**.
+2. A scientific investigation of how existing language models and agent
+   architectures affect the reliability and performance of conversational voice
+   agents.
 
-- latency;
-- speech-recognition accuracy;
-- end-to-end task accuracy; and
-- robustness of a voice agent.
+The project is not merely a restaurant chatbot. Nile Bites is the controlled
+application and evaluation environment for the research.
 
-The project also provides a controlled baseline and a later targeted streaming
-intervention. **No formal human-participant research data has been collected.**
-Synthetic pilot material is development material and must never be reported as
-research findings.
+The AI agent is an implementation and research-development assistant, not the
+scientific decision-maker. It may inspect, implement, test, document, and
+audit. The student/researcher owns the research question, methodology,
+interpretation, official submissions, and business decisions.
 
-## 2. Absolute operating rules for a future AI agent
+The engineering/business goal is an industrial-quality, deployable voice
+customer-service platform that can eventually generalize beyond the fictional
+restaurant. The research goal is to measure reliability rather than claim that
+one model or architecture is universally best.
 
-1. Inspect the repository and current Git status before editing.
-2. Never expose, print, commit, copy, or place credentials in source, Markdown,
-   tests, logs, screenshots, browser pages, or issue comments.
-3. Secret names are safe to document; secret values are not.
-4. Never revoke or replace a credential without a replacement and a verified
-   rollback path.
-5. Treat every wrong item, quantity, price, delivery fee, or order mutation as a
-   safety defect.
-6. Never allow an LLM response to create an order directly. The database and
-   validated business tools are authoritative.
-7. Never silently default a missing quantity to one. Ask for the quantity.
-8. Never map “chicken sandwich” to “chicken burger,” or any other approximate
-   product. Ask which exact catalog item is intended.
-9. Never invent a price, total, ingredient, availability, promotion, fee, ETA,
-   or opening hour. Retrieve it from the restaurant database/tools.
-10. Preserve the customer’s exact item, quantity, constraints, and location.
-11. Keep ordinary questions conversational and model-generated; do not replace
-    the whole agent with canned templates merely to hide provider failures.
-12. If the intelligence provider fails, fail closed with an explicit service
-    error and do not create or alter an order.
-13. Separate research changes from production/demo changes. Do not alter the
-    scientific design without researcher approval.
-14. Run focused tests after every behavioral change, then deploy only after
-    production acceptance tests pass.
-15. Use ASCII by default in code, but preserve existing Arabic data and text.
+## 2. Current research direction
 
-## 3. Physical workspace and partitions
+### Superseding change
+
+The older project emphasized Egyptian Arabic–English code-switching intensity.
+That material remains valuable and must not be deleted, but it is no longer
+automatically the primary independent variable.
+
+The current preferred direction is to evaluate **model selection and agent
+architecture using existing models**, without training or fine-tuning a model.
+Egyptian Arabic–English restaurant conversations remain the application
+environment and may remain an evaluation characteristic.
+
+### Working research question — provisional
+
+> How do language-model selection and agent architecture independently and
+> jointly affect task accuracy and response latency of Egyptian Arabic–English
+> conversational voice agents in tool-based tasks?
+
+Broader alternative:
+
+> How can a reliability-oriented agent architecture improve task accuracy and
+> response latency in real-time conversational voice agents using existing
+> language models?
+
+Do not choose between these questions without presenting the implications to the
+researcher. Working title:
+
+> Evaluating the Effects of Language-Model Selection and Agent Architecture on
+> the Accuracy and Latency of Egyptian Arabic–English Voice Agents
+
+This title is provisional.
+
+## 3. Research objectives
+
+The study should investigate:
+
+1. Whether existing models differ in task accuracy under the same environment.
+2. Whether a reliability-oriented architecture improves accuracy over a
+   conventional sequential baseline.
+3. Whether architecture changes response latency.
+4. Whether architecture effects depend on the selected model.
+5. Which failure types explain incorrect or incomplete tasks.
+
+Task accuracy is primary. Latency is secondary. Conclusions must be limited to
+the models, prompts, tools, tasks, configurations, and environment actually
+tested. Do not claim universal superiority.
+
+## 4. Proposed experiment — not yet frozen
+
+The current candidate is a 2 × 2 comparison:
+
+| Factor | Candidate levels |
+|---|---|
+| Model selection | Model A, Model B |
+| Agent architecture | Conventional baseline, reliability-oriented architecture |
+
+This produces four candidate conditions:
+
+1. Model A + baseline
+2. Model A + proposed architecture
+3. Model B + baseline
+4. Model B + proposed architecture
+
+The two models are **not confirmed**. Select them only after comparing language
+support, tool-use behavior, reproducibility, cost, rate limits, context window,
+availability, and comparable settings. Do not lock models based on popularity.
+
+The proposed reliability-oriented architecture currently contains:
+
+- context manager;
+- orchestration layer;
+- controlled structured tool gateway;
+- validation/reliability layer.
+
+These are research concepts, not automatically novel inventions. If several
+components change together, the experiment evaluates a combined architecture;
+it cannot identify the effect of each component without ablations.
+
+The previous proposal of 30 scenarios × three repetitions × four conditions
+(360 trials) is feasibility planning only, not an approved sample size. Pilot
+variability must inform the final decision.
+
+## 5. Nile Bites evaluation environment
+
+Nile Bites is fictional. Do not use real customers, real purchases, or real
+restaurant claims.
+
+The controlled environment contains:
+
+- menu items and aliases;
+- prices and ingredients;
+- availability and allergens;
+- promotions;
+- delivery zones, fees, minimums, and ETAs;
+- order creation, modification, total calculation, and confirmation;
+- multi-turn conversational context.
+
+Ground truth must be defined before trials. Every task must specify the user
+conversation, expected facts, expected tools, expected final state, scoring
+criteria, and failure conditions.
+
+Candidate task families:
+
+1. general restaurant information;
+2. menu and price questions;
+3. availability and promotions;
+4. delivery information;
+5. order creation;
+6. order modification;
+7. multi-turn/context-retention tasks.
+
+## 6. Metrics and evidence
+
+### Primary metric
+
+**Task accuracy**, based on deterministic final-state assertions rather than
+fluency. Distinguish:
+
+- correct final answer;
+- incorrect factual answer;
+- unsupported/invented claim;
+- wrong tool;
+- wrong tool arguments;
+- lost conversational context;
+- incomplete task;
+- unnecessary or incorrect action.
+
+### Secondary metric
+
+Latency must be defined consistently. Candidate measures:
+
+- first-audio latency: user-turn end to first audible response;
+- task-completion latency: user-turn end to completion of the relevant task.
+
+Do not mix timing boundaries, timeout rules, or playback endpoints.
+
+### Diagnostic metrics
+
+- tool selection accuracy;
+- tool argument accuracy;
+- context retention;
+- factual grounding;
+- failure category;
+- cost/resource overhead where consistently measurable.
+
+Passing tests, a working website, and a successful demo are engineering evidence,
+not research findings.
+
+## 7. Scientific integrity and approval boundaries
+
+Never:
+
+- invent research data;
+- call synthetic pilot data findings;
+- claim an improvement without measured comparison;
+- claim novelty before literature review;
+- silently change the research question;
+- change tasks, ground truth, scoring, or exclusions after seeing results;
+- change controlled variables without a dated decision-log entry;
+- overstate generalizability;
+- submit forms or official competition representations without approval.
+
+Research-authority files:
+
+- `01_Research_Design/Day_01_Research_Design.md`
+- `EXPERIMENT_PROTOCOL.md`
+- `12_Research_Log/Research_Decision_Log.md`
+- `12_Research_Log/Pending_Decisions_For_Researcher.md`
+
+The older C0–C4 code-switching material is preserved for historical context,
+possible secondary analysis, or future exploratory work. Do not delete it or
+silently promote it back to the primary design.
+
+## 8. Verified repository and physical workspace
 
 Active repository:
 
@@ -61,7 +214,7 @@ Active repository:
 C:\Users\Qebaa\Documents\Default Project\Egyptian_Arabic_English_Voice_Agent_Research
 ```
 
-Windows volumes observed during the handoff:
+Visible Windows volumes during the latest audit:
 
 ```text
 C:\
@@ -70,95 +223,74 @@ F:\
 G:\
 ```
 
-The project is currently on `C:`. The other volumes were visible but no project
-copy was selected from them. Do not search, delete, mount, format, or relocate
-any partition without explicit user authorization. The old notebook-only
-project at `C:\Users\Qebaa\EgyVoice-Agent` was a different project and was
-deleted earlier; do not recreate or use it.
+The active project is on `C:`. The other volumes were visible but not selected
+as project locations. Never mount, format, delete, copy, or relocate a volume
+without explicit authorization.
 
-Git remote:
+Git repository:
 
 ```text
 https://github.com/qabellox/nile-bites-voice-agent-prototype.git
 ```
 
-Production URL:
+Current deployment alias:
 
 ```text
 https://nile-bites-voice-agent-prototype-ui.vercel.app
 ```
 
-## 4. Directory map
+The repository must be inspected at the start of every new session. Do not
+assume the deployed version and local source are identical.
 
-| Path | Responsibility |
+## 9. Directory map
+
+| Path | Role |
 |---|---|
-| `api/index.py` | Vercel Python entrypoint; loads production config and creates the Flask app |
-| `src/nbva/phone.py` | Production phone bridge, HTTP routes, memory, deterministic safety path, TTS endpoint |
-| `src/nbva/agent/` | Session, pipeline, prompts, tool-loop integration |
-| `src/nbva/llm/` | LLM provider adapters and OpenAI-compatible client |
-| `src/nbva/asr/` | Local/hosted ASR adapters used by the research pipeline |
-| `src/nbva/tts/` | Research TTS adapters |
-| `src/nbva/db/` | Restaurant repository and order storage |
-| `src/nbva/tools/` | Menu, delivery, order, totals, modification, and confirmation tools |
-| `src/nbva/research/` | Measures, task scoring, failure classification, and experiment support |
-| `src/nbva/stream/` | Streaming intervention architecture and diagnostics |
-| `data/restaurant/nile_bites.json` | Fictional menu, aliases, ingredients, prices, zones, and business rules |
-| `config/llm.yaml` | Research/default LLM configuration |
-| `config/asr.yaml` | Research/default ASR configuration |
-| `config/tts.yaml` | Research/default TTS configuration |
-| `config/prompts/baseline_system_prompt.md` | Grounding and customer-service rules |
-| `config/conditions.yaml` | Code-switching condition bands; provisional until approved |
-| `tests/` | Unit, integration, pipeline, streaming, provider, and phone tests |
-| `ui.html` | Production browser voice UI |
-| `scripts/phone_server.py` | Local phone server |
-| `scripts/dev_ui.py` | Local development UI |
-| `scripts/run_experiment.py` | Research experiment validation, distribution, and runs |
-| `01_Research_Design/` | Research design and Day 1 authoritative record |
-| `02_Literature/` | Literature and study positioning |
-| `03_Business_Environment/` | Fictional restaurant/business environment |
-| `04_Task_Dataset/` | Matched tasks and trial specifications |
-| `05_Audio/` | Audio assets and condition specifications |
-| `06_Baseline_Agent/` | Baseline architecture documentation |
-| `07_Experiments/` | Experiment orchestration and run records |
-| `08_Intervention/` | Targeted intervention documentation |
-| `09_Analysis/` | Scoring, statistics, and analysis |
-| `10_Figures_Tables/` | Generated figures and tables |
-| `11_Paper/` | Manuscript |
-| `12_Research_Log/` | Research decision log and pending decisions |
-| `runs/` | Experiment outputs and freeze manifests |
-| `logs/` | Development/session logs; never place secrets here |
+| `api/index.py` | Vercel Python entrypoint and production defaults |
+| `ui.html` | Browser phone-style voice interface |
+| `src/nbva/phone.py` | Production bridge, HTTP routes, memory, safety routing, TTS |
+| `src/nbva/agent/` | session, prompts, pipeline, orchestration |
+| `src/nbva/llm/` | model/provider adapters and tool-loop client |
+| `src/nbva/asr/` | research ASR adapters |
+| `src/nbva/tts/` | research TTS adapters |
+| `src/nbva/db/` | restaurant repository and order storage |
+| `src/nbva/tools/` | structured business tools |
+| `src/nbva/research/` | measures, scoring, failures, experiment support |
+| `src/nbva/stream/` | streaming intervention and diagnostics |
+| `data/restaurant/nile_bites.json` | fictional database source of truth |
+| `config/` | LLM, ASR, TTS, conditions, and prompts |
+| `tests/` | automated test suite |
+| `scripts/run_experiment.py` | experiment validation, distribution, and runs |
+| `01_Research_Design/` | design records |
+| `02_Literature/` | literature and positioning |
+| `03_Business_Environment/` | restaurant/business design |
+| `04_Task_Dataset/` | tasks and trials |
+| `05_Audio/` | audio conditions |
+| `06_Baseline_Agent/` | baseline documentation |
+| `07_Experiments/` | orchestration and runs |
+| `08_Intervention/` | proposed architecture |
+| `09_Analysis/` | statistics and analysis |
+| `10_Figures_Tables/` | outputs |
+| `11_Paper/` | manuscript |
+| `12_Research_Log/` | decisions and pending approvals |
+| `runs/` | frozen experiment outputs |
+| `logs/` | development/session logs; never store secrets |
 
-## 5. Runtime architecture
-
-### Production browser path
+## 10. Verified production architecture
 
 ```text
-Microphone
-  -> browser SpeechRecognition, language ar-EG
-  -> transcript POST /api/chat
-  -> mandatory OpenRouter LLM reasoning pass
-  -> deterministic restaurant/order validation OR LLM tool loop
+Browser microphone
+  -> browser SpeechRecognition, ar-EG
+  -> POST /api/chat with transcript
+  -> mandatory OpenRouter reasoning pass
+  -> validated deterministic order path or LLM/tool pipeline
   -> grounded response text
   -> POST /api/tts
   -> ElevenLabs audio/mpeg
   -> browser playback
 ```
 
-The current browser ASR is not ElevenLabs Scribe. It is browser-provided
-`SpeechRecognition`/`webkitSpeechRecognition`; it can misrecognize quantities
-before the server receives text. The UI requests multiple alternatives and
-prefers an alternative containing a number, but this is not equivalent to a
-dedicated server-side Arabic ASR system.
-
-### Research baseline path
-
-```text
-microphone/audio -> VAD -> ASR -> LLM tool loop -> business tools -> TTS -> playback
-                                      |
-                                      +-> JSONL trial log
-```
-
-### Public endpoints
+Endpoints:
 
 - `GET /healthz`
 - `POST /api/chat`
@@ -167,134 +299,118 @@ microphone/audio -> VAD -> ASR -> LLM tool loop -> business tools -> TTS -> play
 - `POST /twilio/gather`
 - `POST /twilio/hangup`
 
-## 6. Current provider configuration
+The browser recognizer is not ElevenLabs Scribe. It can misrecognize a spoken
+quantity before the server sees it. A future industrial ASR upgrade should use
+server-side Arabic ASR with confidence, n-best hypotheses, timestamps, and an
+explicit confirmation strategy.
 
-### Intelligence/comprehension
+## 11. Provider and secret boundaries
+
+### General model reasoning
 
 - Endpoint: OpenRouter OpenAI-compatible API.
-- Environment variable for endpoint: `OPENAI_BASE_URL`.
-- Credential variable: hidden Vercel Production `OPENAI_API_KEY`.
-- Current production model: `nvidia/nemotron-3-ultra-550b-a55b:free`.
-- Source fallback: same model in `api/index.py`.
-- Previous paid choice `openai/gpt-4.1-mini` returned HTTP 402 because the
-  OpenRouter account/key had no usable credit at the time.
+- Endpoint variable: hidden Vercel `OPENAI_BASE_URL`.
+- Credential name: hidden Vercel Production `OPENAI_API_KEY`.
+- Current production model at the last verified deployment: configured through
+  hidden `OPENAI_MODEL`; verify before relying on it.
 - The mandatory reasoning pass calls the configured model for every text turn.
-- The model must not be trusted to mutate orders without database/tool
-  validation.
+- The model must never directly mutate orders from prose.
 
-### Text-to-speech
+### Speech output
 
 - Provider: ElevenLabs.
-- Credential variable: hidden Vercel Production `ELEVENLABS_API_KEY`.
-- Voice variable: `ELEVENLABS_VOICE_ID`.
-- Current voice ID: Sarah (`EXAVITQu4vr4xnSDxMaL`).
-- Current model: `eleven_flash_v2_5`, configured by `ELEVENLABS_TTS_MODEL` or
-  the code default in `src/nbva/phone.py`.
-- The funded account was verified to return `audio/mpeg`.
-- TTS does not perform speech recognition or comprehension.
+- Credential: hidden `ELEVENLABS_API_KEY`.
+- Voice: Sarah, ID `EXAVITQu4vr4xnSDxMaL`.
+- Model: `eleven_flash_v2_5` at the last verified deployment.
+- TTS affects output speech, not comprehension or transcription.
 
-### Speech-to-text
+### Speech input
 
-- Production browser UI: browser `ar-EG` SpeechRecognition.
-- No provider API key controls this browser transcription.
-- Research adapters include local faster-whisper, OpenAI-hosted Whisper, manual,
-  and reference-echo stubs, depending on configuration.
-- A future industrial upgrade should use server-side Arabic ASR with confidence,
-  n-best hypotheses, timestamps, and a domain-aware correction/confirmation
-  layer. Provision that service separately; do not pretend the LLM key is ASR.
+- Production UI uses browser `ar-EG` SpeechRecognition.
+- No API key controls browser transcription.
+- Research adapters include local faster-whisper, OpenAI-hosted Whisper,
+  manual, and reference-echo configurations.
 
-## 7. Data and order safety contract
+Never print, commit, paste into documentation, or log secret values. If a
+credential is pasted into chat, recommend rotating it. Never revoke the only
+working credential without a replacement and rollback plan.
 
-The source of truth is `data/restaurant/nile_bites.json`. The current catalog
-includes five burgers, wraps/sandwich-like items, grills, breakfast, sides,
-salads, drinks, delivery zones, prices, aliases, allergens, and business rules.
+## 12. Reliability and business safety contract
 
-The order path must enforce:
+The database and validated tools are authoritative. Enforce:
 
 - exact catalog matching;
 - explicit quantity;
-- explicit delivery zone when delivery requires it;
+- explicit delivery zone when required;
 - database-calculated totals;
-- no invented products;
-- no silent quantity defaults;
-- no order mutation from free-form LLM prose;
-- confirmation before final confirmation action.
+- no invented products, prices, fees, ETAs, or promotions;
+- no LLM-prose order mutation;
+- confirmation before final confirmation;
+- explicit provider failure;
+- no silent quantity default.
 
 Examples:
 
-- “three chicken sandwiches” is ambiguous and must ask which exact sandwich.
-- “three chicken burgers” matches the catalog’s chicken burger and quantity three.
-- “a chicken burger” has no explicit numeric quantity in this safety-critical
-  interface and must ask for the quantity rather than assume one.
+- “three chicken sandwiches” must not become chicken burgers;
+- “a chicken burger” must ask for quantity if the quantity is not explicit;
 - “two burgers and five fries” must preserve both quantities and ask for burger
-  type if “burger” is generic.
+  type when generic;
+- a failed reasoning provider must not create or alter an order.
 
-## 8. Production failure history and lessons
+## 13. Industrial/business roadmap
 
-- Browser Arabic ASR has confused quantities while preserving product names.
-- LLM tool calling on free models has been unreliable; critical supported order
-  paths therefore use validated deterministic parsing and tools.
-- Paid OpenRouter models can return HTTP 402 when credits are unavailable.
-- Free OpenRouter models can return HTTP 429 or low-quality tool behavior.
-- ElevenLabs previously returned `quota_exceeded`; adding credits restored TTS.
-- Arabic digits/numbers are normalized and response prices/totals are rendered in
-  Egyptian Arabic words for better speech.
-- Generic canned responses were previously overused; ordinary questions must
-  reach the model/tool loop.
-- When a provider fails, the system must be explicit and fail closed, not return
-  a success-shaped guessed answer.
+### P0 — safety
 
-## 9. Research integrity rules
+1. Add structured intent extraction with item, quantity, zone, confidence, and
+   clarification fields.
+2. Validate every field against the transcript and database.
+3. Add preview/confirmation before mutation.
+4. Add idempotency keys and durable order state.
+5. Add provider health/quota/401/402/429 monitoring.
+6. Replace browser-only ASR with a server-side Arabic ASR path.
 
-Authoritative documents:
+### P1 — research architecture
 
-- `01_Research_Design/Day_01_Research_Design.md`
-- `EXPERIMENT_PROTOCOL.md`
-- `12_Research_Log/Research_Decision_Log.md`
-- `12_Research_Log/Pending_Decisions_For_Researcher.md`
+1. Implement a conventional sequential baseline.
+2. Implement the reliability-oriented architecture as a separable intervention.
+3. Keep context manager, orchestrator, tool gateway, and validation boundaries
+   observable.
+4. Add ablation capability before claiming component-level effects.
+5. Freeze two comparable models only after researcher approval.
 
-Do not change these scientific decisions autonomously:
+### P2 — product quality
 
-- research question and hypotheses;
-- code-switching definition;
-- condition boundaries;
-- experimental unit;
-- matched-task equivalence;
-- WER, latency, and task-accuracy definitions;
-- controlled variables;
-- failure categories;
-- database contents;
-- statistical analysis plan;
-- whether a result supports a hypothesis.
+1. Preserve natural model-generated conversation for ordinary questions.
+2. Keep deterministic validation for facts and transactions.
+3. Add corrections: add, remove, replace, increase, decrease, cancel.
+4. Add fresh-conversation/reset controls.
+5. Add cost caps, circuit breakers, bounded retries, and rollback.
 
-The locked code-switching measure is:
+### P3 — paper and competition
 
-```text
-English lexical tokens / total lexical tokens * 100
-```
+1. Audit repository and research state.
+2. Approve question, factors, models, tasks, rubric, latency, repetitions, and
+   analysis before formal collection.
+3. Produce the abstract, ≤2-minute video, board, detailed research-plan PDF,
+   and Rules Wizard screenshot only with researcher approval.
+4. The announced online judging dates were January 1–2, 2027 and the announced
+   registration deadline was November 30, 2026 at 12:00 AM; confirm details with
+   the organizer before official action.
 
-It is computed from the verified reference transcript, not the ASR output.
-C0–C4 boundaries are provisional until the researcher approves them after pilot
-distribution inspection.
+## 14. Reproducibility
 
-Formal data collection has not started. Do not call pilot data findings.
-Human-participant collection requires consent, approved storage, and researcher
-approval.
-
-## 10. Reproducible research workflow
-
-Before any formal run, freeze and archive together:
+Archive together for every formal run:
 
 - `freeze.json`;
 - database snapshot and SHA-256;
 - prompt copy and SHA-256;
-- `trials.yaml`;
-- `tasks.yaml`;
-- audio files;
+- task/trial files;
+- audio;
 - conditions snapshot;
-- software versions and provider/model settings.
+- software versions;
+- exact model identifiers and provider settings.
 
-Useful commands:
+Useful local commands:
 
 ```powershell
 cd "C:\Users\Qebaa\Documents\Default Project\Egyptian_Arabic_English_Voice_Agent_Research"
@@ -303,162 +419,101 @@ python -m pytest
 python -m nbva preflight
 python -m nbva check
 python -m nbva audit
-python -m nbva devices
-python -m nbva live
 python -m nbva chat
-python -m nbva session --task-id DEV-ORD-01
 python scripts/run_experiment.py validate --trials data/pilot/trials.yaml --tasks data/pilot/tasks.yaml
 python scripts/run_experiment.py dist --trials data/pilot/trials.yaml
 ```
 
-Development tests may use fakes and synthetic audio. Formal research runs must
-be labeled, frozen, reproducible, and separated from development smoke tests.
+The repository documents infrastructure readiness, not completed formal
+research. Run the current suite before reporting test counts; historical counts
+must not be repeated as current evidence.
 
-## 11. Industrialization roadmap
-
-### P0 — safety and observability
-
-1. Replace browser-only ASR with server-side Arabic ASR or add a server audio
-   upload path with n-best transcripts and confidence.
-2. Add a structured intent schema:
-   `intent`, `items`, `quantity`, `zone`, `confidence`, `clarification_required`.
-3. Validate every LLM-produced field against the catalog and transcript.
-4. Add an order preview/confirmation state before mutation.
-5. Add idempotency keys and durable order state for retries.
-6. Redact secrets and personal data from logs.
-7. Add provider health, latency, quota, 402/401/429 metrics and alerts.
-
-### P1 — conversation quality
-
-1. Use the LLM for natural language understanding and response planning, not
-   unvalidated arithmetic or catalog invention.
-2. Keep responses concise, Egyptian Arabic when appropriate, and specific.
-3. Preserve mixed-language input without forcing Urdu/Hindi-like pronunciation.
-4. Add adversarial tests for wrong quantities, unsupported products, corrections,
-   “remove,” “replace,” “add,” and multi-turn references.
-5. Add a fresh-conversation control that clears local browser call state.
-
-### P2 — production reliability
-
-1. Use a paid, budget-capped reasoning model only after OpenRouter credit is
-   confirmed; keep a tested fallback policy.
-2. Use ElevenLabs Flash for real-time speech and monitor character quota.
-3. Add Twilio call-state persistence and webhook authentication.
-4. Add timeouts, circuit breakers, bounded retries, and clear degraded modes.
-5. Add deployment smoke tests and rollback instructions.
-
-### P3 — scientific productization
-
-1. Keep baseline and intervention implementations isolated.
-2. Freeze every formal run.
-3. Pre-register analysis decisions before inspecting outcome data.
-4. Report uncertainty, exclusions, failure categories, and provider versions.
-5. Never mix live product telemetry with formal research data.
-
-## 12. Copy-paste master prompt for another AI agent
-
-Use the following as a system/developer prompt for an agent operating in this
-repository:
+## 15. Autonomous-agent master prompt
 
 ```text
-You are the senior engineering and research-integrity agent for the Nile Bites
-Egyptian Arabic–English voice-agent project.
+You are the senior engineering and research-development agent for the Nile
+Bites project.
 
-Workspace:
+The active workspace is:
 C:\Users\Qebaa\Documents\Default Project\Egyptian_Arabic_English_Voice_Agent_Research
 
-Repository:
-https://github.com/qabellox/nile-bites-voice-agent-prototype.git
+The project has two inseparable goals:
+1. Build a reliable industrial-style conversational voice-agent prototype.
+2. Conduct a scientifically defensible study of language-model selection and
+   agent architecture using existing models, without training or fine-tuning.
 
-Production:
-https://nile-bites-voice-agent-prototype-ui.vercel.app
+Nile Bites is a fictional controlled restaurant environment, not a real business
+and not a source of real customer data. The student/researcher owns scientific
+decisions and official submissions. You implement and audit; you do not invent
+the methodology.
 
-Mission:
-Make the voice agent reliable, natural, grounded, low-latency, and suitable for
-an industrial demonstration while preserving the scientific validity of the
-research project.
+The current research direction supersedes the older code-switching-centered
+framing. Preserve older code-switching material, but do not assume it is the
+primary independent variable. The working candidate is a 2 x 2 comparison of
+two approved existing models and two approved architectures: conventional
+baseline versus reliability-oriented architecture. Model identities and the
+final question remain provisional until the researcher approves them.
 
-Before acting:
-1. Read README.md, EXPERIMENT_PROTOCOL.md, the relevant Day 1 design record,
-   the research decision log, and this AUTONOMOUS_AGENT_HANDOFF.md.
-2. Run git status and inspect the relevant code path.
-3. Identify whether the requested change is production behavior, research
-   instrumentation, or a scientific decision. Never make scientific decisions
-   yourself.
+Before any work:
+- inspect git status, branch, commit, and actual files;
+- read README.md, this handoff, EXPERIMENT_PROTOCOL.md, the Day 1 design,
+  decision log, and pending decisions;
+- trace the real implementation rather than trusting stale documentation;
+- distinguish verified facts, historical facts, and unknowns;
+- run the smallest relevant test before editing.
 
-Architecture:
-Browser microphone -> browser ar-EG SpeechRecognition -> /api/chat ->
-mandatory OpenRouter reasoning pass -> validated database/tools or LLM tool loop
--> grounded response -> /api/tts -> ElevenLabs Flash Arabic audio.
+Safety:
+- never expose or commit credentials;
+- never invent products, prices, quantities, totals, fees, ETAs, or promotions;
+- never let model prose directly mutate an order;
+- never default a missing quantity to one;
+- never substitute a burger for a sandwich;
+- validate all state changes through database-backed tools;
+- fail closed when the provider fails;
+- preserve exact user item, quantity, location, and constraints.
 
-Current providers:
-- OpenRouter-compatible endpoint via OPENAI_BASE_URL.
-- Hidden credential name: OPENAI_API_KEY.
-- Current production model: nvidia/nemotron-3-ultra-550b-a55b:free.
-- ElevenLabs hidden credential name: ELEVENLABS_API_KEY.
-- ElevenLabs model: eleven_flash_v2_5.
-- ElevenLabs voice ID: EXAVITQu4vr4xnSDxMaL.
-- Browser ASR is not controlled by an API key.
+Conversation:
+- ordinary questions should use the actual model/tool loop, not canned replies;
+- respond naturally in Egyptian Arabic, English, or the user's mixture;
+- be concise, formal, specific, and non-repetitive;
+- use database/tool results for facts;
+- ask one precise clarification when ambiguity remains.
 
-Non-negotiable safety:
-- Never print or commit secret values.
-- Never invent a product, price, quantity, total, fee, ETA, or promotion.
-- Never let LLM prose directly mutate an order.
-- Never default a missing quantity to one.
-- Never map a sandwich to a burger or make an approximate catalog match.
-- If an item or quantity is ambiguous, repeat what was detected and ask one
-  precise clarification question.
-- If the reasoning provider fails, fail closed and do not mutate an order.
-- Validate all state changes through the database-backed tools.
+Scientific integrity:
+- never invent data or call synthetic pilot material findings;
+- do not change the question, variables, tasks, scoring, latency definitions,
+  sample size, exclusions, or analysis after seeing results;
+- log approved methodological changes;
+- do not claim novelty or universal superiority without evidence;
+- keep baseline and intervention separable and reproducible.
 
-Conversation quality:
-- Ordinary questions should reach the actual model/tool loop, not canned replies.
-- Respond in the customer’s Egyptian Arabic, English, or natural mixture.
-- Be formal and specific without repetitive greetings.
-- Use tool results for facts and preserve the customer’s exact constraints.
-
-Research integrity:
-- Formal data collection has not started.
-- Never call synthetic pilot data research findings.
-- Do not alter code-switching definitions, condition boundaries, metrics,
-  controlled variables, task equivalence, or analysis plans without researcher
-  approval and a dated decision-log entry.
-- Archive freeze.json, database/prompt/task/audio/condition snapshots and versions
-  for formal runs.
-
-Implementation method:
-1. Reproduce the issue with a focused test or live request.
-2. Find the producer of the wrong behavior, not merely a downstream symptom.
-3. Make the smallest complete change using existing patterns.
-4. Add a regression test for the exact failure.
-5. Run the focused suite, syntax/type checks, and relevant production smoke tests.
-6. Inspect logs for provider status, latency, tool calls, and error codes.
-7. Deploy only after verification.
-8. Report files changed, tests, deployment URL, remaining uncertainty, and any
-   required user-side action.
-
-If requirements conflict, prioritize:
-1. safety/no hallucinated order mutations;
-2. factual database grounding;
-3. explicit provider errors;
-4. scientific reproducibility;
-5. natural conversational quality;
-6. latency and cost.
+Engineering workflow:
+1. reproduce the issue;
+2. identify the producer of the wrong behavior;
+3. implement a surgical fix;
+4. add a regression test;
+5. run focused tests and syntax/type checks;
+6. run production smoke tests without exposing secrets;
+7. inspect provider status and logs;
+8. deploy only after verification;
+9. report files, tests, deployment, evidence, uncertainty, and pending approvals.
 ```
 
-## 13. Handoff checklist
+## 16. Required first action for a new agent
 
-- [ ] Read this document and the authoritative research documents.
-- [ ] Confirm the active path is the `C:` repository above.
-- [ ] Confirm no secret values are in Git or logs.
-- [ ] Confirm `/healthz`, `/api/chat`, and `/api/tts`.
-- [ ] Run `python -m pytest`.
-- [ ] Test explicit quantities: one, two, three, Arabic-Indic digits, and English.
-- [ ] Test missing quantities: must ask, never assume.
-- [ ] Test unsupported “chicken sandwich”: must not become burger.
-- [ ] Test exact chicken burger: must preserve quantity.
-- [ ] Test multi-item order: every line and quantity must be preserved.
-- [ ] Test price/total grounding against `nile_bites.json`.
-- [ ] Check OpenRouter status and quota without exposing the key.
-- [ ] Check ElevenLabs status and quota without exposing the key.
-- [ ] Record any scientific question in `Pending_Decisions_For_Researcher.md`.
+Do not refactor or collect data immediately. First produce an audit covering:
+
+1. verified project state;
+2. actual request-to-response architecture;
+3. current repository and test status;
+4. research documents found;
+5. completed implementation;
+6. incomplete implementation;
+7. outdated or contradictory information;
+8. experimental readiness;
+9. decisions requiring student approval;
+10. prioritized next steps.
+
+The audit must explicitly compare the repository with this handoff and identify
+old code-switching assumptions, new model/architecture plans, provider drift,
+metric conflicts, and blockers to a valid formal experiment.
