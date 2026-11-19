@@ -195,4 +195,4 @@ Browser mic → SpeechRecognition (ar-EG) → POST /api/chat
 | 2026-11-19 | d10da92 | Google provider rewritten for Gemini parts, schema filtering, thought signatures; env-driven provider; dependency pinned; 5 deployment defects fixed; production switched to `gemini-3.5-flash-lite` | 467/0; live 3-turn probe, violations `[]`, 3.4/1.9/3.3 s |
 | 2026-11-19 | 5e767bd | Record Gemini switch commit hash in context cache | doc review |
 | 2026-11-19 | 026fb83 | Record `llm_model_version` from Gemini's own response to prove model provenance | 467/0; live turn: provider google, model + version both `gemini-3.5-flash-lite` |
-| 2026-11-19 | pending | Twilio: fix invalid `ar-EG` on `<Say>` (valid only for `<Gather>`), separate ASR/TTS config, add ASR hints, opt-in HMAC signature validation, setup guide | 469/0; live webhooks 200 with valid TwiML; no real call yet (no account/number) |
+| 2026-11-19 | 62ab588 | Twilio: fix invalid `ar-EG` on `<Say>` (valid only for `<Gather>`), separate ASR/TTS config, add ASR hints, opt-in HMAC signature validation, setup guide | 469/0; live webhooks 200 with valid TwiML; no real call yet (no account/number) |
