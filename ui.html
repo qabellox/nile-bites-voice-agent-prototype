@@ -64,22 +64,41 @@
     speechSynthesis.speak(utterance);
     return true;
   };
-  const speak = async content => {
+  const ttsBlob = async content => {
+    const response = await fetch(`${base()}/api/tts`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text:content})});
+    if (!response.ok) throw new Error('Neural speech unavailable');
+    return response.blob();
+  };
+  const playBlob = blob => new Promise((resolve, reject) => {
+    audio = new Audio(URL.createObjectURL(blob));
+    audio.onended = () => { audio = null; resolve(); };
+    audio.onerror = () => { audio = null; reject(new Error('playback failed')); };
+    audio.play().catch(reject);
+  });
+  const speak = async (content, parts) => {
     stopSpeaking();
     const run = speechRun;
     speaking = true;
+    const texts = (Array.isArray(parts) && parts.length ? parts : [content]).filter(t => t && t.trim());
     try {
-      const response = await fetch(`${base()}/api/tts`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text:content})});
-      if (!response.ok || run !== speechRun) throw new Error('Neural speech unavailable');
-      audio = new Audio(URL.createObjectURL(await response.blob()));
-      audio.onended = () => { speaking = false; audio = null; };
-      await audio.play();
+      // First chunk is synthesized and played immediately; every following chunk
+      // is fetched while the previous one is still playing, so the caller hears
+      // the opening sentence instead of waiting for the whole reply.
+      const prefetch = index => texts[index] ? ttsBlob(texts[index]).catch(() => null) : null;
+      let pending = prefetch(0);
+      for (let i = 0; i < texts.length; i++) {
+        const blob = await pending;
+        if (run !== speechRun) return;
+        if (!blob) throw new Error('Neural speech unavailable');
+        pending = prefetch(i + 1);
+        await playBlob(blob);
+      }
+      if (run === speechRun) speaking = false;
     } catch (error) {
-      if (run === speechRun) {
-        speaking = false;
-        if (!speakWithBrowserVoice(content)) {
-          setState('Audio unavailable — use text', 'error');
-        }
+      if (run !== speechRun) return;
+      speaking = false;
+      if (!speakWithBrowserVoice(texts.join(' ') || content)) {
+        setState('Audio unavailable — use text', 'error');
       }
     }
   };
@@ -114,7 +133,7 @@
     try {
       const response=await fetch(`${base()}/api/chat`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({call_id:sessionId,caller_id:sessionId,text:content,compact:true})});
       const data=await response.json(); if (!response.ok || !data.ok) throw new Error(data.error || 'Agent request failed');
-      const answer=data.response || 'معلش، ماقدرتش أطلع رد دلوقتي. ممكن تقولها تاني؟'; add('agent',answer); speak(answer); setState('Connected','live');
+      const answer=data.response || 'معلش، ماقدرتش أطلع رد دلوقتي. ممكن تقولها تاني؟'; add('agent',answer); speak(answer, data.sentences); setState('Connected','live');
     } catch (error) { add('agent',`Connection error: ${error.message}`); setState('Connection error','error'); }
     finally { busy=false; }
   }

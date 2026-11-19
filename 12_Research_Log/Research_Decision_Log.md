@@ -270,3 +270,52 @@ first-audio latency.
 | 2026-11-18 | — | Cost scope = LLM + hosted TTS; compute time and fixed costs excluded | Only cash spend on the measured path counts as variable cost | No |
 | 2026-11-18 | — | First-audio endpoint = first audio ready (per-arm synthesis point) | Equals what a caller hears first; fair to both arms | No |
 
+---
+
+## 2026-11-19 — Production phone agent: the model drives the turn
+
+Full evidence and change list: `08_Intervention/PRODUCTION_AGENT_FIX.md`.
+
+**Decision 5 — the deployed prototype runs the model on every turn.** The
+keyword/template order path (`_direct_order_response`) no longer answers first; it
+is behind `phone.direct_order_path`, default `false`. The mandatory
+"reasoning pass" — a complete LLM call per turn whose output was discarded — is
+deleted. Rationale: the prototype was answering the most common utterances
+without consulting the model at all, which is what "scripted" meant, and paying a
+full extra round trip per turn for nothing. The template layer is kept and tested
+because it encodes real safety rules (no invented item, no invented quantity, no
+item substitution).
+
+**Decision 6 — production uses a separate persona prompt.**
+`config/prompts/phone_agent_prompt.md` is loaded by `PhoneBridge` only. The
+research prompt `config/prompts/baseline_system_prompt.md` remains the controlled
+variable of the experiment and is not edited. Keeping one prompt for both was a
+confound in the other direction: the deployed agent was telling callers it was
+being evaluated.
+
+**Decision 7 — state injection is production-only, and optional.**
+`process_turn` accepts `context_note=None`. Production supplies the current order
+(every field derived from tool output); the research path supplies nothing, so the
+message list and the grounding check are unchanged. This is deliberately **not**
+implemented as an A1 component: A1's context manager must be measured as part of
+the intervention, and giving A0 the same state note would erase that contrast.
+
+**Decision 8 — `api/index.py` must not choose the model silently.** An unset
+`OPENAI_MODEL` now logs a warning and `/healthz` reports the live model, provider,
+prompt file and engine. Model selection for the prototype is the owner's, not a
+default in code.
+
+**Affects collected data?** No — no formal research data has been collected, and
+the research path's behaviour is unchanged (`context_note=None` reproduces the
+previous message list exactly).
+
+| Date | Modifies | Change | Rationale | Affects collected data? |
+|------|----------|--------|-----------|--------------------------|
+| 2026-11-19 | — | Production answers every turn through the model; template path flag-gated off | The template layer was intercepting the common utterances, so the model never ran | No |
+| 2026-11-19 | — | Removed the discarded per-turn LLM "reasoning pass" | One useless round trip per turn; refusal on any failure | No |
+| 2026-11-19 | — | Production persona prompt, separate from the research prompt | The research prompt told the deployed agent it was a trial subject | No |
+| 2026-11-19 | — | `context_note` (optional) carries order state to the model; research passes none | The model was amnesiac about the order it had built | No |
+| 2026-11-19 | — | Fries no longer default to quantity 1 | Invented a line the caller never asked for | No |
+| 2026-11-19 | — | Out-of-scope veto narrowed to named unrelated domains | It refused first-turn Arabic greetings | No |
+| 2026-11-19 | — | `/api/chat` returns speech chunks; client synthesizes chunk 1 first | First audio waited for chat completion plus full-reply synthesis | No |
+

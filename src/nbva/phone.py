@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import html
 import io
+import re
 import sqlite3
 import threading
 import os
@@ -80,18 +81,6 @@ _RESTAURANT_MARKERS = (
     "price",
     "available",
     "restaurant",
-)
-_VAGUE_RESPONSE_MARKERS = (
-    "ممكن توضح",
-    "ممكن توضحي",
-    "إيه اللي عايزه",
-    "على إيه محتاج مساعدة",
-    "أقدر أساعد",
-    "أنا هنا أساعد",
-    "لم أفهم",
-    "مافهمتش",
-    "what can i help",
-    "could you clarify",
 )
 _QUANTITY_WORDS = {
     "واحد": 1,
@@ -324,8 +313,13 @@ def _find_order_lines(repository: Any, text: str) -> list[dict[str, Any]]:
                 r"(?:من\s*)?(?:بطاطس|فرايز|fries)",
                 folded,
             )
-            quantity = _quantity_from_text(match.group(1)) if match else 1
-            lines.append({"item": fries.id, "quantity": quantity})
+            # No quantity stated means no line. Defaulting to 1 here silently
+            # put an item the caller never asked for into a real order, which is
+            # the exact failure the project's own safety rule forbids.
+            if match:
+                quantity = _quantity_from_text(match.group(1))
+                if quantity:
+                    lines.append({"item": fries.id, "quantity": quantity})
     return lines
 
 
@@ -474,6 +468,70 @@ def _direct_order_response(session: PhoneSession, text: str) -> str | None:
     )
 
 
+def _conversation_note(session: PhoneSession) -> str:
+    """Describe the business state the model has already established.
+
+    The transcript records words, not state. Without this note the model cannot
+    see the order it built earlier in the same call: it re-searches the menu,
+    re-quotes prices it already gave, and loses the thread. Everything here is
+    derived from tool output — no fact is added that a tool did not produce.
+    """
+    state = session.app.session.state_snapshot()
+    order = session.app.session.current_order()
+    lines = ["[SESSION STATE — current, derived from tool calls in this call]"]
+    lines.append(
+        f"Turn {state['turn_index']}. Orders created in this call: "
+        f"{state['orders_created']}."
+    )
+    if order is None:
+        lines.append("No order registered yet.")
+    else:
+        lines.append(
+            f"Active order {order['order_id']}: status={order['status']}, "
+            f"mode={order['order_mode']}, zone={order.get('delivery_zone_id') or 'none'}."
+        )
+        for line in order.get("lines") or []:
+            name = line.get("item_name_en") or line.get("item_id")
+            lines.append(
+                f"- {line.get('quantity')} x {name} ({line.get('item_id')}) "
+                f"@ {line.get('unit_price')} = {line.get('line_total')}"
+            )
+        lines.append(
+            f"subtotal={order.get('subtotal')}, discount={order.get('discount_total')}, "
+            f"delivery={order.get('delivery_fee')}, total={order.get('total')} EGP."
+        )
+        for discount in order.get("discounts") or []:
+            lines.append(f"- promotion applied: {discount.get('name_en')}")
+    lines.append(
+        "Do not ask again for any of the above, and do not re-call a tool whose "
+        "result is already reflected here unless the caller changed something."
+    )
+    return "\n".join(lines)
+
+
+_SENTENCE_END = re.compile(r"(?<=[.!?؟])\s+")
+
+
+def _split_for_speech(text: str, max_parts: int = 3) -> list[str]:
+    """Split a reply into the chunks the caller should hear first-to-last.
+
+    The phone client synthesizes chunk 1 immediately and prefetches the rest, so
+    audio starts before the whole reply exists. Splitting is deterministic and
+    lossless: joining the parts back with a space reproduces the original text.
+    """
+    cleaned = " ".join(str(text or "").split())
+    if not cleaned:
+        return []
+    parts = [part.strip() for part in _SENTENCE_END.split(cleaned) if part.strip()]
+    if len(parts) <= 1:
+        return [cleaned]
+    if len(parts) > max_parts:
+        head = parts[: max_parts - 1]
+        tail = " ".join(parts[max_parts - 1 :])
+        parts = head + [tail]
+    return parts
+
+
 class ConversationMemory:
     """Small durable transcript memory keyed by caller identity.
 
@@ -551,6 +609,19 @@ class PhoneBridge:
         memory_path: str | Path = "logs/phone_memory.sqlite3",
     ) -> None:
         self.config = config or load_config()
+        phone_cfg = self.config.section("phone") or {}
+        # Which layer answers an order request. False = the model drives every
+        # turn. True = the legacy keyword/template path answers first, which is
+        # why the prototype felt scripted. Off by default; kept because it
+        # encodes real safety rules and is still tested.
+        self.direct_order_path = bool(phone_cfg.get("direct_order_path", False))
+        self.context_injection = bool(phone_cfg.get("context_injection", True))
+        prompt_file = str(phone_cfg.get("prompt_file") or "").strip()
+        if prompt_file:
+            # Production persona, not the research instrument prompt. The
+            # research prompt asks the model to behave like a trial subject; this
+            # one asks it to run a phone call.
+            self.config.set("system_prompt.file", prompt_file)
         self.memory = ConversationMemory(memory_path)
         self._sessions: dict[str, PhoneSession] = {}
         self._lock = threading.Lock()
@@ -567,82 +638,85 @@ class PhoneBridge:
             self._sessions[call_id] = session
             return session
 
-    def _mandatory_reasoning_pass(
-        self, session: PhoneSession, text: str
+    def _out_of_scope(self, text: str) -> bool:
+        """Narrow keyword veto for clearly unrelated requests.
+
+        This used to also refuse any Arabic turn that contained no restaurant
+        keyword and had no prior context. That rule rejected greetings, "معلش
+        سؤال", and every natural opening a caller might use, which is a large
+        part of why the agent could not hold a conversation. Scope is now the
+        model's job (the prompt states it); this veto only catches requests that
+        name an obviously unrelated domain, and never fires when the caller also
+        mentions the restaurant.
+        """
+        folded = text.casefold()
+        if not any(marker in folded for marker in _OUT_OF_SCOPE_MARKERS):
+            return False
+        return not any(marker in folded for marker in _RESTAURANT_MARKERS)
+
+    def _remember(
+        self,
+        session: PhoneSession,
+        caller_id: str,
+        user_text: str,
+        reply: str,
+        *,
+        into_session: bool,
     ) -> None:
-        """Run the configured LLM on every turn without allowing side effects."""
-        messages = [
-            {
-                "role": "system",
-                "content": (
-                    "Analyze this customer-service turn for intent and relevant "
-                    "menu concepts. Do not invent prices, quantities, or items. "
-                    "This is a mandatory reasoning pass; the application will "
-                    "validate facts and execute orders separately."
-                ),
-            },
-            *session.app.session.message_history()[-8:],
-            {"role": "user", "content": text},
-        ]
-        session.app.llm.complete(messages=messages, tools=None)
+        """Persist a turn that did not go through the pipeline.
+
+        The pipeline already records its own turns. Paths that answer without it
+        must still advance the conversation, otherwise the model's next turn sees
+        a transcript with a hole in it.
+        """
+        self.memory.append(caller_id, "user", user_text)
+        self.memory.append(caller_id, "assistant", reply)
+        if into_session:
+            session.app.session.add_turn("user", user_text, _utc_now())
+            session.app.session.add_turn("assistant", reply, _utc_now())
 
     def process_text(self, call_id: str, caller_id: str, text: str) -> dict[str, Any]:
         clean_text = str(text or "").strip()
         if not clean_text:
             raise ValueError("speech text is empty")
         session = self.session_for(call_id, caller_id)
-        try:
-            self._mandatory_reasoning_pass(session, clean_text)
-        except Exception as exc:
-            session.app.logger.log_event(
-                "mandatory_llm_reasoning_failed",
-                error_type=type(exc).__name__,
-                error=str(exc),
-            )
-            response = (
-                "حضرتك، خدمة الذكاء الاصطناعي مش متاحة دلوقتي، "
-                "ومش هسجل أي طلب من غير ما أراجع الكلام بأمان. حاول تاني بعد لحظات."
-            )
-            self.memory.append(caller_id, "user", clean_text)
-            self.memory.append(caller_id, "assistant", response)
-            return {
-                "response": response,
-                "turn": {},
-                "state": session.app.session.state_snapshot(),
-                "session": session.app.describe(),
-            }
-        folded_text = clean_text.casefold()
-        has_arabic = any("\u0600" <= char <= "\u06ff" for char in clean_text)
-        has_context = bool(session.app.session.history) or bool(
-            self.memory.load(caller_id)
-        )
-        unrelated_arabic = (
-            has_arabic
-            and not has_context
-            and not any(marker in folded_text for marker in _RESTAURANT_MARKERS)
-        )
-        if (
-            any(marker in folded_text for marker in _OUT_OF_SCOPE_MARKERS)
-            or unrelated_arabic
-        ):
+
+        if self._out_of_scope(clean_text):
             response = (
                 "حضرتك، أقدر أساعد حضرتك في المنيو والطلبات والتوصيل الخاص بـ "
                 "Nile Bites فقط."
             )
-            self.memory.append(caller_id, "user", clean_text)
-            self.memory.append(caller_id, "assistant", response)
-            return {"response": response, "turn": {}, "state": None, "session": session.app.describe()}
-        direct_order_response = _direct_order_response(session, clean_text)
-        if direct_order_response is not None:
-            self.memory.append(caller_id, "user", clean_text)
-            self.memory.append(caller_id, "assistant", direct_order_response)
+            self._remember(
+                session, caller_id, clean_text, response, into_session=True
+            )
             return {
-                "response": direct_order_response,
+                "response": response,
                 "turn": {},
-                "state": session.app.session.state_snapshot(),
+                "state": None,
                 "session": session.app.describe(),
             }
-        result = session.app.pipeline.process_turn(text=clean_text, speak=False)
+
+        if self.direct_order_path:
+            direct_order_response = _direct_order_response(session, clean_text)
+            if direct_order_response is not None:
+                self._remember(
+                    session, caller_id, clean_text, direct_order_response,
+                    into_session=True,
+                )
+                return {
+                    "response": direct_order_response,
+                    "turn": {},
+                    "state": session.app.session.state_snapshot(),
+                    "session": session.app.describe(),
+                }
+
+        # The model runs the turn. It gets the conversation plus, when enabled,
+        # the business state it has already built — which the transcript alone
+        # does not carry.
+        note = _conversation_note(session) if self.context_injection else None
+        result = session.app.pipeline.process_turn(
+            text=clean_text, speak=False, context_note=note
+        )
         session.app.logger.log_turn(result.turn)
         response_text = result.response_text.strip()
         fallback_response = _direct_fallback_response(
@@ -651,9 +725,13 @@ class PhoneBridge:
         if fallback_response and result.error:
             response_text = fallback_response
         if not response_text:
+            # Empty reply with no error means the model produced nothing usable.
+            # Ask a concrete clarifying question instead of a generic apology.
             response_text = (
                 "حضرتك، حصل عطل مؤقت في خدمة الرد. "
                 "ممكن حضرتك تعيد السؤال بعد لحظات؟"
+                if result.error
+                else _arabic_safe_clarification(clean_text)
             )
         self.memory.append(caller_id, "user", clean_text)
         self.memory.append(caller_id, "assistant", response_text)
@@ -726,7 +804,21 @@ def create_phone_app(
 
     @app.get("/healthz")
     def health() -> Response:
-        return jsonify({"ok": True, "service": "nbva-phone-prototype"})
+        # Report which model and prompt are actually live. The prototype once ran
+        # on a default free model and the research prompt because an environment
+        # variable was unset; nothing in the UI made that visible.
+        return jsonify(
+            {
+                "ok": True,
+                "service": "nbva-phone-prototype",
+                "llm": bridge.config.get("llm.model"),
+                "llm_provider": bridge.config.get("llm.provider"),
+                "system_prompt_file": bridge.config.get("system_prompt.file"),
+                "engine": str(bridge.config.get("architecture.engine") or "a0"),
+                "direct_order_path": bridge.direct_order_path,
+                "context_injection": bridge.context_injection,
+            }
+        )
 
     @app.post("/api/chat")
     def chat() -> Response:
@@ -739,9 +831,14 @@ def create_phone_app(
             )
         except ValueError as exc:
             return jsonify({"ok": False, "error": str(exc)}), 400
+        # The client synthesizes the first chunk while it prefetches the rest, so
+        # audio starts before the whole reply has been spoken into existence.
+        sentences = _split_for_speech(result["response"])
         if body.get("compact"):
-            return jsonify({"ok": True, "response": result["response"]})
-        return jsonify({"ok": True, **result})
+            return jsonify(
+                {"ok": True, "response": result["response"], "sentences": sentences}
+            )
+        return jsonify({"ok": True, **result, "sentences": sentences})
 
     @app.post("/api/tts")
     def tts() -> Response:

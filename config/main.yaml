@@ -31,6 +31,32 @@ experiment:
   # condition. Pin an explicit weekday before any data collection.
   business_weekday: "auto"   # auto | monday | tuesday | ... | sunday
 
+phone:
+  # --- Production prototype settings ---------------------------------------
+  # The deployed phone/browser agent reads this section. The research
+  # instrument (CLI, live loop, experiment runner) ignores it, so changing
+  # anything here does not touch A0 or the experiment.
+  #
+  # Persona prompt. Deliberately different from the research prompt: the
+  # research prompt is written for a frozen evaluation trial, this one is
+  # written for a caller. Both keep the rule that facts come only from tools.
+  prompt_file: "config/prompts/phone_agent_prompt.md"
+  #
+  # Which layer answers an order request.
+  #   false (default) = the language model drives the turn through the tool loop.
+  #   true            = the legacy keyword/template path answers first.
+  #
+  # The legacy path was written when the model was too weak to be trusted with
+  # an order. It is the reason the prototype felt scripted: for the most common
+  # utterances the model was never consulted at all. It is kept, complete and
+  # tested, because it encodes real safety rules — but it is off by default.
+  direct_order_path: false
+  #
+  # Give the model the current order state at the start of every turn. Without
+  # this the model only sees the words exchanged, never the order it built, so
+  # it re-queries prices it already quoted and cannot continue a thread.
+  context_injection: true
+
 architecture:
   # Which turn engine build_app() constructs. This is the ARCHITECTURE factor of
   # the 2x2 design; it is the only place the arm is selected.

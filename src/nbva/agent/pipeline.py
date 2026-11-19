@@ -104,6 +104,7 @@ class BaselinePipeline:
         speak: bool = True,
         extra: dict[str, Any] | None = None,
         on_audio_start: Any = None,
+        context_note: str | None = None,
     ) -> PipelineResult:
         """Run one full turn. Either ``audio`` or ``text`` must be supplied.
 
@@ -111,6 +112,11 @@ class BaselinePipeline:
         the output device. That instant is the endpoint of the locked primary
         latency metric, so the live loop supplies a callback to capture the real
         device moment rather than the moment playback was requested.
+
+        ``context_note`` is an optional, caller-supplied system message carrying
+        conversational state the transcript alone cannot hold — in production, the
+        current order. It defaults to ``None``, which leaves the message list
+        exactly as before, so the research instrument is unaffected.
         """
         if audio is None and text is None:
             raise ValueError("process_turn needs either audio or text")
@@ -219,6 +225,11 @@ class BaselinePipeline:
         self.session.add_turn("user", asr_text, utc_now_iso())
         lat.stamp_nlu_start()
         messages = [{"role": "system", "content": self.system_prompt}]
+        if context_note:
+            # Conversational state the transcript cannot carry. Only supplied by
+            # callers that have it (the phone bridge); research runs leave it
+            # unset, so the message list and the record are unchanged.
+            messages.append({"role": "system", "content": context_note})
         messages.extend(self.session.message_history()[-self.session.max_history_turns :])
         lat.stamp_tools_start()
         response_text, _, tool_calls, llm_error = run_tool_loop(
@@ -258,7 +269,9 @@ class BaselinePipeline:
 
         # ---- grounding check ----
         if self.enforce_grounding and response_text:
-            record.grounding_violations = self._check_grounding(response_text, tool_calls)
+            record.grounding_violations = self._check_grounding(
+                response_text, tool_calls, extra_text=context_note
+            )
 
         # ---- final state ----
         final_state = self.session.current_order()
@@ -336,15 +349,23 @@ class BaselinePipeline:
         return None
 
     def _check_grounding(
-        self, response_text: str, tool_calls: list[dict[str, Any]]
+        self,
+        response_text: str,
+        tool_calls: list[dict[str, Any]],
+        extra_text: str | None = None,
     ) -> list[str]:
         """Flag numbers in the response that no tool ever returned.
 
         This is a safety net for the rule "the model must not invent business
         facts". It cannot prove the absence of an error, but a violation here is
         a real and logged symptom of a hallucinated price or time.
+
+        ``extra_text`` is a context note the caller supplied to this turn (in
+        production, the current order). Numbers in it are legitimate: they came
+        from tool output in an earlier turn, not from the model's imagination, so
+        quoting them is not a fabrication.
         """
-        if not tool_calls:
+        if not tool_calls and not extra_text:
             # No tool output at all: any number in the reply is unsourced.
             return self._numbers_in(response_text)
 
@@ -354,6 +375,10 @@ class BaselinePipeline:
         for call in tool_calls:
             blob = json.dumps(call.get("result"), ensure_ascii=False, default=str)
             for m in re.findall(r"\d+", blob):
+                allowed.add(m.lstrip("0") or "0")
+                allowed.add(m)
+        if extra_text:
+            for m in re.findall(r"\d+", extra_text):
                 allowed.add(m.lstrip("0") or "0")
                 allowed.add(m)
 
