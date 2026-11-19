@@ -182,4 +182,4 @@ Browser mic → SpeechRecognition (ar-EG) → POST /api/chat
 | 2026-11-18 | 0b122db | Paired stats design + Phase 2 spec; P-11 corrected; Stage 2a gateway | 444/0; schema parity |
 | 2026-11-19 | ee000fa | Production agent fix: model drives every turn, order state injected, progressive speech, model visible in `/healthz` | 456/0 (12 new phone tests); node --check ui.html |
 | 2026-11-19 | 546b4d0 | Grounding compares Arabic-Indic digits as numbers; Vercel `OPENAI_MODEL` set + redeployed; paid models 402 (no credit) → free model live | 458/0; live 3-turn probe, violations `[]` |
-| 2026-11-19 | pending | Google provider rewritten for Gemini parts, schema filtering, thought signatures; env-driven provider; dependency pinned; 5 deployment defects fixed; production switched to `gemini-3.5-flash-lite` | 467/0; live 3-turn probe, violations `[]`, 3.4/1.9/3.3 s |
+| 2026-11-19 | d10da92 | Google provider rewritten for Gemini parts, schema filtering, thought signatures; env-driven provider; dependency pinned; 5 deployment defects fixed; production switched to `gemini-3.5-flash-lite` | 467/0; live 3-turn probe, violations `[]`, 3.4/1.9/3.3 s |
