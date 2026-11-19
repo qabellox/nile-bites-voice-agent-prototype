@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import base64
+import hashlib
+import hmac
 from pathlib import Path
 
 from nbva.config.loader import load_config
@@ -11,6 +14,7 @@ from nbva.phone import (
     _split_for_speech,
     create_phone_app,
     twiml_response,
+    verify_twilio_signature,
 )
 
 
@@ -46,6 +50,51 @@ def test_twiml_escapes_text_and_contains_gather():
     body = response.get_data(as_text=True)
     assert "<Gather" in body
     assert "price &lt; 10 &amp; ask" in body
+
+
+def test_twiml_uses_separate_valid_languages_for_recognition_and_speech():
+    """ar-EG is a Gather language, not a Say language in Twilio."""
+    body = twiml_response("أهلاً").get_data(as_text=True)
+    assert '<Gather input="speech" language="ar-EG"' in body
+    assert '<Say language="ar-XA" voice="Google.ar-XA-Standard-A">' in body
+    assert "language=\"ar-EG\"" not in body.split("</Gather>")[1]
+    assert "hints=" in body
+
+
+def test_twilio_signature_validation_rejects_forged_webhooks(tmp_path: Path, monkeypatch):
+    import nbva.phone as phone
+
+    url = "https://example.test/twilio/gather"
+    params = {"CallSid": "CA1", "SpeechResult": "عايز برجر"}
+    token = "test-auth-token"
+    signed = url + "".join(f"{k}{v}" for k, v in sorted(params.items()))
+    good = base64.b64encode(
+        hmac.new(token.encode(), signed.encode(), hashlib.sha1).digest()
+    ).decode()
+
+    assert verify_twilio_signature(url, params, good, token)
+    assert not verify_twilio_signature(url, params, "bad", token)
+    assert not verify_twilio_signature(url, params, good, "other-token")
+
+    monkeypatch.setattr(phone, "VALIDATE_TWILIO_SIGNATURES", True)
+    monkeypatch.setenv("TWILIO_AUTH_TOKEN", token)
+    app = phone.create_phone_app(_offline_config(), tmp_path / "memory.sqlite3")
+    client = app.test_client()
+
+    # Flask's test client URL is localhost, so re-sign with the exact URL it used.
+    local_url = "http://localhost/twilio/gather"
+    local_signed = local_url + "".join(f"{k}{v}" for k, v in sorted(params.items()))
+    local_good = base64.b64encode(
+        hmac.new(token.encode(), local_signed.encode(), hashlib.sha1).digest()
+    ).decode()
+    ok = client.post(
+        "/twilio/gather", data=params, headers={"X-Twilio-Signature": local_good}
+    )
+    denied = client.post(
+        "/twilio/gather", data=params, headers={"X-Twilio-Signature": "bad"}
+    )
+    assert ok.status_code == 200
+    assert denied.status_code == 403
 
 
 def test_phone_api_reuses_call_memory(tmp_path: Path):

@@ -8,6 +8,9 @@ LLM tool use, order state, logging, and language behaviour.
 
 from __future__ import annotations
 
+import base64
+import hashlib
+import hmac
 import html
 import io
 import logging
@@ -15,6 +18,7 @@ import re
 import sqlite3
 import threading
 import os
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,6 +30,50 @@ from .agent.app import AgentApp, build_app
 from .config.loader import Config, load_config
 
 _LOG = logging.getLogger("nbva.phone")
+
+# Twilio keeps two *different* language tables. `ar-EG` (Egyptian Arabic) is
+# valid for <Gather> speech recognition but is NOT a <Say> language; Twilio's
+# Arabic TTS codes are ar-AE, ar-XA and arb. An invalid language/voice pair can
+# make <Say> fail outright, so ASR and TTS must be configured separately.
+# Twilio has no Egyptian-Arabic TTS voice: ar-XA is Modern Standard Arabic.
+ASR_LANGUAGE = os.getenv("TWILIO_ASR_LANGUAGE", "ar-EG")
+TTS_LANGUAGE = os.getenv("TWILIO_TTS_LANGUAGE", "ar-XA")
+TTS_VOICE = os.getenv("TWILIO_TTS_VOICE", "Google.ar-XA-Standard-A")
+# Biasing recognition with the restaurant's own vocabulary cuts the number of
+# misheard dish and zone names before the transcript ever reaches the model.
+ASR_HINTS = os.getenv(
+    "TWILIO_ASR_HINTS",
+    "نايل بايتس, مدينة نصر, برجر حلومي, تشيكن برجر, دبل تشيز برجر, "
+    "زنجر برجر, برجر خضار, بطاطس, توصيل",
+)
+# Opt-in: a public webhook can otherwise be hit by anyone and spend the Gemini
+# quota. Off by default so a missing/mistyped token cannot block the first call.
+VALIDATE_TWILIO_SIGNATURES = os.getenv(
+    "TWILIO_VALIDATE_SIGNATURES", ""
+).strip().lower() in {"1", "true", "yes"}
+
+
+def verify_twilio_signature(
+    url: str, params: dict[str, str], signature: str, auth_token: str
+) -> bool:
+    """Check Twilio's ``X-Twilio-Signature`` without the Twilio SDK.
+
+    Twilio signs the exact request URL plus the POST fields sorted by name.
+    ``hmac.compare_digest`` avoids a timing leak on the comparison.
+    """
+    if not auth_token or not signature:
+        return False
+    parts = urlsplit(url)
+    canonical_url = url
+    if parts.query:
+        query = urlencode(sorted(parse_qsl(parts.query, keep_blank_values=True)))
+        canonical_url = urlunsplit((parts.scheme, parts.netloc, parts.path, query, parts.fragment))
+    signed = canonical_url + "".join(f"{k}{v}" for k, v in sorted(params.items()))
+    digest = hmac.new(
+        auth_token.encode("utf-8"), signed.encode("utf-8"), hashlib.sha1
+    ).digest()
+    expected = base64.b64encode(digest).decode("ascii")
+    return hmac.compare_digest(expected, signature)
 
 
 def _utc_now() -> str:
@@ -758,29 +806,39 @@ class PhoneBridge:
             session.app.logger.log_session_footer()
 
 
-def _say(text: str, language: str = "ar-EG") -> str:
-    safe = html.escape(str(text), quote=False)
-    return f'<Say language="{html.escape(language, quote=True)}">{safe}</Say>'
+def _say(text: str, language: str | None = None, voice: str | None = None) -> str:
+    """Build a <Say>. Defaults come from Twilio's *TTS* language table."""
+    lang = language or TTS_LANGUAGE
+    spoken_voice = voice or TTS_VOICE
+    attrs = f'language="{html.escape(lang, quote=True)}"'
+    if spoken_voice:
+        attrs += f' voice="{html.escape(spoken_voice, quote=True)}"'
+    return f"<Say {attrs}>{html.escape(str(text), quote=False)}</Say>"
 
 
 def twiml_response(
     text: str,
     action: str = "/twilio/gather",
-    language: str = "ar-EG",
+    asr_language: str | None = None,
     gather: bool = True,
 ) -> Response:
-    """Return Twilio-compatible XML without requiring the Twilio SDK."""
+    """Return Twilio-compatible XML without requiring the Twilio SDK.
+
+    Recognition uses Egyptian Arabic (``ar-EG``); speech synthesis uses a
+    *different* language code because Twilio's <Say> table has no ``ar-EG``.
+    """
     parts = ['<?xml version="1.0" encoding="UTF-8"?><Response>']
     if gather:
         safe_action = html.escape(action, quote=True)
         parts.append(
-            f'<Gather input="speech" language="{language}" speechTimeout="auto" '
+            f'<Gather input="speech" language="{html.escape(asr_language or ASR_LANGUAGE, quote=True)}" '
+            f'speechTimeout="auto" hints="{html.escape(ASR_HINTS, quote=True)}" '
             f'action="{safe_action}" method="POST">'
         )
-    parts.append(_say(text, language))
+    parts.append(_say(text))
     if gather:
         parts.append("</Gather>")
-        parts.append(_say("مش سامعك كويس. ممكن تقولها تاني؟", language))
+        parts.append(_say("مش سامعك كويس. ممكن تقولها تاني؟"))
         parts.append(
             f'<Redirect method="POST">{html.escape(action, quote=False)}</Redirect>'
         )
@@ -797,6 +855,24 @@ def create_phone_app(
     app = Flask(__name__)
     app.config["NBVA_PHONE_BRIDGE"] = bridge
     ui_path = Path(__file__).resolve().parents[2] / "ui.html"
+
+    @app.before_request
+    def _check_twilio_signature() -> Response | None:
+        if not VALIDATE_TWILIO_SIGNATURES or not request.path.startswith("/twilio/"):
+            return None
+        token = os.getenv("TWILIO_AUTH_TOKEN", "")
+        if not token:
+            _LOG.error("signature validation on but TWILIO_AUTH_TOKEN is missing")
+            return Response("Forbidden", status=403, mimetype="text/plain")
+        if not verify_twilio_signature(
+            request.url,
+            request.form.to_dict(flat=True),
+            request.headers.get("X-Twilio-Signature", ""),
+            token,
+        ):
+            _LOG.warning("rejected unsigned request to %s", request.path)
+            return Response("Forbidden", status=403, mimetype="text/plain")
+        return None
 
     @app.get("/")
     def ui() -> Response:

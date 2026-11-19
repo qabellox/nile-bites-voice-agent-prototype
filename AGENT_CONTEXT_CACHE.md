@@ -18,7 +18,7 @@ files it points to. It stores verified state and pointers, never the full docs.
 - Deployment: `https://nile-bites-voice-agent-prototype-ui.vercel.app` —
   `/healthz` now reports `llm`, `llm_provider`, `system_prompt_file`, `engine`,
   `direct_order_path`, `context_injection` (deploy not yet re-verified).
-- Suite: **467 tests, 0 failures, 0 errors, 0 skipped** (2026-11-19, `pytest`).
+- Suite: **469 tests, 0 failures, 0 errors, 0 skipped** (2026-11-19, `pytest`).
   Re-run before quoting counts. Note `addopts = "-q"` already: `-q -q` hides the
   summary line; use plain `pytest` to see the count.
 - `.env` present, untracked; `.gitignore` covers secrets, logs, audio, run outputs.
@@ -70,6 +70,16 @@ Browser mic → SpeechRecognition (ar-EG) → POST /api/chat
   shape this provider adapter does not use and returns HTTP 400.
 - Routes in `src/nbva/phone.py`: `GET /`, `GET /healthz`, `POST /api/chat`,
   `POST /api/tts`, `/twilio/voice`, `/twilio/gather`, `/twilio/hangup`.
+- **Twilio phone path:** app side deployed and verified live (webhooks return
+  HTTP 200 valid TwiML; Arabic `SpeechResult` reaches Gemini). **No Twilio
+  account/number exists yet** — account + number purchase + caller verification
+  require an adult/guardian (owner is 16). Exact console steps and costs:
+  `08_Intervention/TWILIO_SETUP.md`. Web UI and Vercel domain are preserved.
+- Twilio `<Gather>` uses `ar-EG` (valid ASR); `<Say>` must use a *different*
+  valid TTS language (`ar-XA` + `Google.ar-XA-Standard-A`) — `ar-EG` on `<Say>`
+  is invalid and would have silenced the first call. Twilio has no Egyptian TTS
+  voice. Webhook signature validation is opt-in via `TWILIO_VALIDATE_SIGNATURES=1`
+  + `TWILIO_AUTH_TOKEN`; off by default so it cannot block the first call.
 - ElevenLabs TTS (`ELEVENLABS_API_KEY`, voice `EXAVITQu4vr4xnSDxMaL`,
   `eleven_flash_v2_5`).
 - Browser ASR is **not** server-grade: it can mishear a spoken quantity before
@@ -183,3 +193,6 @@ Browser mic → SpeechRecognition (ar-EG) → POST /api/chat
 | 2026-11-19 | ee000fa | Production agent fix: model drives every turn, order state injected, progressive speech, model visible in `/healthz` | 456/0 (12 new phone tests); node --check ui.html |
 | 2026-11-19 | 546b4d0 | Grounding compares Arabic-Indic digits as numbers; Vercel `OPENAI_MODEL` set + redeployed; paid models 402 (no credit) → free model live | 458/0; live 3-turn probe, violations `[]` |
 | 2026-11-19 | d10da92 | Google provider rewritten for Gemini parts, schema filtering, thought signatures; env-driven provider; dependency pinned; 5 deployment defects fixed; production switched to `gemini-3.5-flash-lite` | 467/0; live 3-turn probe, violations `[]`, 3.4/1.9/3.3 s |
+| 2026-11-19 | 5e767bd | Record Gemini switch commit hash in context cache | doc review |
+| 2026-11-19 | 026fb83 | Record `llm_model_version` from Gemini's own response to prove model provenance | 467/0; live turn: provider google, model + version both `gemini-3.5-flash-lite` |
+| 2026-11-19 | pending | Twilio: fix invalid `ar-EG` on `<Say>` (valid only for `<Gather>`), separate ASR/TTS config, add ASR hints, opt-in HMAC signature validation, setup guide | 469/0; live webhooks 200 with valid TwiML; no real call yet (no account/number) |
