@@ -2,25 +2,25 @@
 
 **Purpose:** cross-session, cross-device memory. Read this FIRST; open only the
 files it points to. It stores verified state and pointers, never the full docs.
-**Update rule:** refresh §1/§4/§6 + the log before ending a session. Keep ≤130 lines.
+**Update rule:** refresh §1/§3/§4/§6 + the log before ending a session.
 **Never store secrets here** — provider credential NAMES only.
 
 ---
 
-## 1. Verified state — snapshot 2026-11-18
+## 1. Verified state — snapshot 2026-11-19
 
 - Workspace: `C:\Users\Qebaa\Documents\Default Project\Egyptian_Arabic_English_Voice_Agent_Research`
-- Branch `main`, HEAD `1716cf5` ("docs: supersede code-switching design with
-  architecture x model-capability direction").
+- Branch `main`, HEAD `ee000fa` ("fix(phone): let the model run the call …").
 - Remotes:
   - `origin` → `github.com/qabellox/egyptian-arabic-english-voice-agent` (PRIVATE)
   - `prototype` → `github.com/qabellox/nile-bites-voice-agent-prototype` (PUBLIC)
-  - At audit: HEAD == prototype/main; origin was 31 commits behind. The cache
-    commit re-syncs both.
-- Deployment: `https://nile-bites-voice-agent-prototype-ui.vercel.app`
-  `/healthz` → `{ok:true, service:"nbva-phone-prototype"}` (verified 2026-11-18).
-- Suite: **444 tests, 0 failures, 0 errors, 0 skipped, exit 0**
-  (verified 2026-11-18 via `--junitxml`). Re-run before quoting counts.
+  - Both synced at `0b122db`; `ee000fa` + the cache commit push to both.
+- Deployment: `https://nile-bites-voice-agent-prototype-ui.vercel.app` —
+  `/healthz` now reports `llm`, `llm_provider`, `system_prompt_file`, `engine`,
+  `direct_order_path`, `context_injection` (deploy not yet re-verified).
+- Suite: **456 tests, 0 failures, 0 errors, 0 skipped** (2026-11-19, `pytest`).
+  Re-run before quoting counts. Note `addopts = "-q"` already: `-q -q` hides the
+  summary line; use plain `pytest` to see the count.
 - `.env` present, untracked; `.gitignore` covers secrets, logs, audio, run outputs.
 
 ## 2. Project identity & research direction
@@ -38,54 +38,61 @@ files it points to. It stores verified state and pointers, never the full docs.
 - Working question, title, 2×2 design and component list: authority is
   `01_Research_Design/Current_Direction.md` + `EXPERIMENT_PROTOCOL.md`. Models
   are NOT confirmed. The 360-trial figure is feasibility planning only.
-- **Research authority files (do not edit without researcher approval):**
-  - `01_Research_Design/Day_01_Research_Design.md`
-  - `EXPERIMENT_PROTOCOL.md`
-  - `12_Research_Log/Research_Decision_Log.md`
-  - `12_Research_Log/Pending_Decisions_For_Researcher.md`
-  - `AUTONOMOUS_AGENT_HANDOFF.md`
+- **Authority files (do not edit without researcher approval):**
+  `01_Research_Design/Day_01_Research_Design.md`, `EXPERIMENT_PROTOCOL.md`,
+  `12_Research_Log/Research_Decision_Log.md`,
+  `12_Research_Log/Pending_Decisions_For_Researcher.md`,
+  `AUTONOMOUS_AGENT_HANDOFF.md`.
 
-## 3. Verified production path (handoff §10, code-checked)
+## 3. Verified production path (post-fix)
 
 ```
-Browser mic → browser SpeechRecognition (ar-EG) → POST /api/chat {transcript}
-→ mandatory OpenRouter reasoning pass → validated deterministic order path
-  OR LLM/tool loop (DB-backed tools only) → grounded response text
-→ POST /api/tts → ElevenLabs audio/mpeg → playback
+Browser mic → SpeechRecognition (ar-EG) → POST /api/chat
+→ model tool loop (one LLM call per turn; order state injected as system note)
+→ reply text + `sentences` (≤3 chunks)
+→ client: POST /api/tts for chunk 1 → play → prefetch chunk 2 while playing
 ```
 
+- `phone:` section in `config/main.yaml`: `prompt_file`, `direct_order_path:
+  false`, `context_injection: true`. Read only by `PhoneBridge`, so the research
+  instrument never sees it.
+- Production persona: `config/prompts/phone_agent_prompt.md`. Research prompt
+  (`config/prompts/baseline_system_prompt.md`) is the controlled variable and is
+  untouched.
+- `_direct_order_response` (keyword/template path) is still present and tested;
+  reachable only with `phone.direct_order_path: true`.
+- Entry `api/index.py` (Vercel): model from `OPENAI_MODEL`, default
+  `nvidia/nemotron-3-ultra-550b-a55b:free` with a startup warning;
+  `llm.max_tokens 500`, `temperature 0.25`, `timeout 35s`.
 - Routes in `src/nbva/phone.py`: `GET /`, `GET /healthz`, `POST /api/chat`,
-  `POST /api/tts`, `POST /twilio/voice`, `POST /twilio/gather`,
-  `POST /twilio/hangup`.
-- Entry: `api/index.py` (Vercel). UI: `ui.html`. Bridge: `src/nbva/phone.py`.
-- Providers: OpenRouter OpenAI-compatible (hidden `OPENAI_BASE_URL`,
-  `OPENAI_API_KEY`, `OPENAI_MODEL`); ElevenLabs TTS (`ELEVENLABS_API_KEY`,
-  voice Sarah `EXAVITQu4vr4xnSDxMaL`, model `eleven_flash_v2_5` at last deploy).
+  `POST /api/tts`, `/twilio/voice`, `/twilio/gather`, `/twilio/hangup`.
+- ElevenLabs TTS (`ELEVENLABS_API_KEY`, voice `EXAVITQu4vr4xnSDxMaL`,
+  `eleven_flash_v2_5`).
 - Browser ASR is **not** server-grade: it can mishear a spoken quantity before
   the server sees it. Server-side Arabic ASR with confidence/n-best = P0.
 - Engineering evidence (tests, demo, healthz) ≠ research findings.
 
 ## 4. Known drifts / contradictions (open)
 
-1. ~~`EXPERIMENT_PROTOCOL.md` still frames baseline vs streaming over C0–C4.~~
-   **RESOLVED 2026-11-18:** protocol rewritten for architecture × model
-   capability; old version archived at
-   `01_Research_Design/_superseded/EXPERIMENT_PROTOCOL_v1_code_switching.md`;
-   Day 1 doc carries a SUPERSEDED banner; decision log updated.
-2. Provider drift: `config/llm.yaml` default model is `qwen2.5:7b-instruct` /
-   `openai_compatible`; production model comes from hidden `OPENAI_MODEL`
-   (gpt-4o-mini per prior verified runs — re-verify). `config/tts.yaml` says
-   `edge` / `ar-EG-SalmaNeural`, but the production path uses ElevenLabs. The
-   config files describe the research instrument, not necessarily production.
-3. `origin` (private) was 31 commits behind `prototype` (public) at audit.
-4. **P-10 unresolved:** latency cutoff 10s in config is dead; effective 120s;
+1. ~~Protocol framed baseline vs streaming over C0–C4~~ — RESOLVED 2026-11-18;
+   archived at `01_Research_Design/_superseded/EXPERIMENT_PROTOCOL_v1_*.md`.
+2. Provider drift: `config/llm.yaml` says `qwen2.5:7b-instruct` +
+   `openai_compatible`; production model comes from hidden `OPENAI_MODEL`.
+   `config/tts.yaml` says `edge` / `ar-EG-SalmaNeural`; production uses
+   ElevenLabs. The config files describe the instrument, not production.
+3. **P-10 unresolved:** latency cutoff 10s in config is dead; effective 120s;
    first-audio vs turn-completion not standardized. Blocks a valid formal run.
-5. **Public visibility risk:** the public prototype repo exposes the full
+4. **Public visibility risk:** the public prototype repo exposes the full
    architecture, handoff, and research docs. No secret values found in a scan,
    but IP/disclosure review is required (handoff §14).
-6. **LEGACY:** C1–C4 boundaries provisional; dev set 16/33 off-band — belongs to
-   the superseded C0–C4 instrument only.
-7. No formal human-participant data exists. `data/pilot/` is synthetic dev-only.
+5. **No production latency logging.** First-audio / turn-completion are measured
+   on the research path only; the deployed bridge logs turns, not timing.
+6. `src/ui.py` is unreferenced, pre-existing, and has a syntax error
+   (`render_template_string('''` never closed). Nothing imports it. Superseded by
+   root `ui.html`; delete or fix only with owner approval.
+7. **LEGACY:** C1–C4 boundaries provisional; dev set 16/33 off-band — belongs to
+   the superseded instrument only.
+8. No formal human-participant data exists. `data/pilot/` is synthetic dev-only.
 
 ## 5. Safety contract (code-enforced — never weaken)
 
@@ -99,20 +106,31 @@ Browser mic → browser SpeechRecognition (ar-EG) → POST /api/chat {transcript
 
 ## 6. Prioritized next steps
 
-- **A0/A1 switch: DONE (Phase 1).** `architecture.engine` in `config/main.yaml`
-  selects the arm via `src/nbva/arch/base.py::build_turn_engine`. A0 = frozen
-  `BaselinePipeline` (untouched file), `a1` raises `NotImplementedError` on
-  purpose — never silently falls back. `AgentApp.engine_id`,
+- **Production intelligence fix: DONE** (`ee000fa`). Evidence + full change list:
+  `08_Intervention/PRODUCTION_AGENT_FIX.md`. Eight defects: discarded per-turn
+  LLM pass; template layer answering before the model; fries defaulting to
+  quantity 1; amnesiac message history (no tool results/order state); scope gate
+  refusing Arabic greetings; research prompt serving production; full-reply TTS
+  before any audio; invisible model default.
+- **Owner action:** set `OPENAI_MODEL` in Vercel, redeploy, check `/healthz`, then
+  hold a real 5-turn call and read the transcript. Model choice is still the
+  owner's; the research pair is unselected.
+- **A0/A1 switch: DONE (Phase 1).** `architecture.engine` selects the arm via
+  `src/nbva/arch/base.py::build_turn_engine`. A0 = frozen `BaselinePipeline`,
+  `a1` raises on purpose — never silently falls back. `AgentApp.engine_id`,
   `describe()["architecture"]`. Tests: `tests/test_architecture.py`.
 - **Phase 2 = A1 components**, one at a time, flag-gated + observable, no
   component-level claims until ablations run.
   - **2a gateway DONE** (`src/nbva/arch/gateway.py`): schema validation before
     dispatch, numeric-string coercion, `create_order` dedup, per-call timing.
-    Parity test: `llm_schemas()` identical to the registry. `enabled=False` is a
+    Parity test: `llm_schemas()` identical to the registry; `enabled=False` is a
     pure pass-through. 16 tests in `tests/test_gateway.py`.
-  - 2b context, 2c validation, 2d orchestration (its own loop; parallel reads
-    flag default OFF), 2e latency path (sentence TTS), 2f assembly + no-silent-
-    fallback suite. Spec: `08_Intervention/PHASE2_A1_DESIGN.md`.
+  - **Next = 2b context manager.** Note: the production `_conversation_note` is
+    deliberately NOT the A1 context manager — A1's must be measured as part of
+    the intervention.
+  - 2c validation, 2d orchestration (own loop; parallel reads flag default OFF),
+    2e latency path, 2f assembly + no-silent-fallback suite. Spec:
+    `08_Intervention/PHASE2_A1_DESIGN.md`.
 - **Stats design (paired) proposed:** `08_Intervention/STATISTICAL_DESIGN_PAIRED.md`
   — randomized complete block design, task = unit, order schedule seeded +
   hashed, task-level clustering. **P-11 corrected:** a denominator of 1.0 is
@@ -121,11 +139,6 @@ Browser mic → browser SpeechRecognition (ar-EG) → POST /api/chat {transcript
 - **P0 safety:** structured intent extraction (item, qty, zone, confidence,
   clarification) + field validation vs transcript + DB; preview/confirm;
   idempotency; provider health/quota/401/402/429 monitoring; server-side Arabic ASR.
-- **P1 research:** implement separable conventional baseline (A0) + reliability
-  architecture (A1); keep context manager / orchestrator / tool gateway /
-  validation observable; add ablations before claiming component effects; freeze
-  two comparable models only after researcher approval. Fine-tuning is NOT a
-  factor.
 - **P1 venture/IP:** dated architecture + invention records; prior-art matrix;
   business wedge; unit economics; separate product benchmarks from science.
 - **P3 competition:** audit → researcher approves design → abstract, ≤2-min video,
@@ -136,16 +149,17 @@ Browser mic → browser SpeechRecognition (ar-EG) → POST /api/chat {transcript
 
 1. Read this file, then `git status`, `git log -3`, `git remote -v`.
 2. Open an authority file only if editing/verifying it; task files are pointers.
-3. Quote test counts only from a fresh `--junitxml` run.
-4. Update §1/§4/§6 and the log below at session end; keep this file compact.
+3. Quote test counts only from a fresh run.
+4. Update §1/§3/§4/§6 and the log below at session end; keep this file compact.
 5. Any scientific change → researcher approval → decision log, never silently.
 
 ## Log
 
 | Date | Commit | Change | Verified by |
 |---|---|---|---|
-| 2026-11-18 | a80912e | Cache created after handoff audit | pytest 418/0; /healthz ok; git remotes |
-| 2026-11-18 | 1716cf5 | Removed code-switching as primary design; new Current_Direction + rewritten protocol; old archived; decision log updated | doc review; tests 418/0 |
-| 2026-11-18 | plan commit | `08_Intervention/IMPLEMENTATION_PLAN_A0_A1_P0.md` written (H3 margin options, H2 falsifiable, claim scope, cost method, A0/A1 parity, P0, phases) — **awaiting researcher approval; no code touched** | doc review; no code changes |
-| 2026-11-18 | (this commit) | Researcher decisions recorded (ratio ≥0.90, task-script confirmation, LLM+hosted TTS, first-audio-ready) + P-11 opened; Phase 1 engine switch implemented | pytest 428/0; a1 refuses; A0 parity test |
-| 2026-11-18 | (next commit) | Paired statistical design + Phase 2 spec written; **P-11 corrected** (ratio not undefined; boundary variance is); Stage 2a tool gateway implemented | pytest 444/0; schema parity; disabled gateway == baseline |
+| 2026-11-18 | a80912e | Cache created after handoff audit | pytest 418/0; /healthz ok |
+| 2026-11-18 | 1716cf5 | Code-switching removed as primary design; new Current_Direction + protocol; old archived | doc review; 418/0 |
+| 2026-11-18 | fec54a9 | `IMPLEMENTATION_PLAN_A0_A1_P0.md` written — no code touched | doc review |
+| 2026-11-18 | 08c1a50 | Researcher decisions recorded; Phase 1 engine switch implemented | 428/0; a1 refuses; A0 parity |
+| 2026-11-18 | 0b122db | Paired stats design + Phase 2 spec; P-11 corrected; Stage 2a gateway | 444/0; schema parity |
+| 2026-11-19 | ee000fa | Production agent fix: model drives every turn, order state injected, progressive speech, model visible in `/healthz` | 456/0 (12 new phone tests); node --check ui.html |
