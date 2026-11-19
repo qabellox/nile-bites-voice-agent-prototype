@@ -319,3 +319,26 @@ previous message list exactly).
 | 2026-11-19 | — | Out-of-scope veto narrowed to named unrelated domains | It refused first-turn Arabic greetings | No |
 | 2026-11-19 | — | `/api/chat` returns speech chunks; client synthesizes chunk 1 first | First audio waited for chat completion plus full-reply synthesis | No |
 
+---
+
+## 2026-11-19 (later) — grounding check compares numbers, not digit scripts
+
+A live production turn exposed this: `_MONEY_RE` matches Unicode digits
+(`\d` is Unicode-aware in Python), so a reply saying `٣٥٠ جنيه` was extracted as
+the string `"٣٥٠"`, while the allowed set built from tool JSON held `"350"`. Every
+correct Arabic-numeral price was therefore logged as an ungrounded number.
+
+**Decision 9 — normalize Unicode digits to ASCII on both sides of the grounding
+comparison.** The checker still flags a number no tool returned
+(`٩٩٩` → `999`); it no longer flags the same number written differently. This
+touches the instrument's recorded metric, so it is recorded here rather than
+shipped silently.
+
+**Affects collected data?** No data exists. If it did, earlier
+`grounding_violations` for Arabic-numeral replies would need re-scoring.
+
+| Date | Modifies | Change | Rationale | Affects collected data? |
+|------|----------|--------|-----------|--------------------------|
+| 2026-11-19 | — | Grounding check normalizes Arabic-Indic / Extended Arabic-Indic digits to ASCII | Correct prices were being recorded as ungrounded numbers | No (no data yet) |
+| 2026-11-19 | — | Production stays on a `:free` model until OpenRouter credit exists | Paid `openai/gpt-4.1` returns 402 on every call; key is valid, balance is zero | No |
+

@@ -18,7 +18,7 @@ files it points to. It stores verified state and pointers, never the full docs.
 - Deployment: `https://nile-bites-voice-agent-prototype-ui.vercel.app` —
   `/healthz` now reports `llm`, `llm_provider`, `system_prompt_file`, `engine`,
   `direct_order_path`, `context_injection` (deploy not yet re-verified).
-- Suite: **456 tests, 0 failures, 0 errors, 0 skipped** (2026-11-19, `pytest`).
+- Suite: **458 tests, 0 failures, 0 errors, 0 skipped** (2026-11-19, `pytest`).
   Re-run before quoting counts. Note `addopts = "-q"` already: `-q -q` hides the
   summary line; use plain `pytest` to see the count.
 - `.env` present, untracked; `.gitignore` covers secrets, logs, audio, run outputs.
@@ -112,9 +112,15 @@ Browser mic → SpeechRecognition (ar-EG) → POST /api/chat
   quantity 1; amnesiac message history (no tool results/order state); scope gate
   refusing Arabic greetings; research prompt serving production; full-reply TTS
   before any audio; invisible model default.
-- **Owner action:** set `OPENAI_MODEL` in Vercel, redeploy, check `/healthz`, then
-  hold a real 5-turn call and read the transcript. Model choice is still the
-  owner's; the research pair is unselected.
+- **Owner action:** `OPENAI_MODEL` is now set in Vercel Production. Paid models
+  (`openai/gpt-4.1`, `openai/gpt-4o`, …) return **402 Payment Required** — the
+  OpenRouter account has no credit. Production therefore runs
+  `nvidia/nemotron-3-ultra-550b-a55b:free`, which works on the same key. Adding
+  credit requires a card in the account owner's name (adult/guardian).
+- **Live behaviour after the fix** (verified by direct API calls, 3 turns):
+  zone + menu answer with tool calls, order preview with the real total, then a
+  demand for the exact delivery zone instead of inventing one;
+  `grounding_violations = []`; 2.5 / 6.4 / 10.6 s per turn on the free model.
 - **A0/A1 switch: DONE (Phase 1).** `architecture.engine` selects the arm via
   `src/nbva/arch/base.py::build_turn_engine`. A0 = frozen `BaselinePipeline`,
   `a1` raises on purpose — never silently falls back. `AgentApp.engine_id`,
@@ -163,3 +169,4 @@ Browser mic → SpeechRecognition (ar-EG) → POST /api/chat
 | 2026-11-18 | 08c1a50 | Researcher decisions recorded; Phase 1 engine switch implemented | 428/0; a1 refuses; A0 parity |
 | 2026-11-18 | 0b122db | Paired stats design + Phase 2 spec; P-11 corrected; Stage 2a gateway | 444/0; schema parity |
 | 2026-11-19 | ee000fa | Production agent fix: model drives every turn, order state injected, progressive speech, model visible in `/healthz` | 456/0 (12 new phone tests); node --check ui.html |
+| 2026-11-19 | 546b4d0 | Grounding compares Arabic-Indic digits as numbers; Vercel `OPENAI_MODEL` set + redeployed; paid models 402 (no credit) → free model live | 458/0; live 3-turn probe, violations `[]` |
