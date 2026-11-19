@@ -201,6 +201,21 @@ probe and stayed under a second per model call.
 apology line. `/healthz` reported `llm_provider: google`,
 `llm: gemini-3.5-flash-lite`, production prompt, `direct_order_path: false`.
 
+**Model provenance is now checked from the response, not just our config.**
+`GoogleProvider` copies Google's returned `modelVersion` into
+`TurnRecord.llm_model_version`. A live turn reported:
+
+```
+llm_provider: google
+llm_model: gemini-3.5-flash-lite
+llm_model_version: gemini-3.5-flash-lite
+```
+
+`vercel logs --json` for the same request shows
+`POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent "HTTP/1.1 200 OK"`.
+That rules out an OpenRouter route, a stale deployment, or an aliased local
+model answering under the Gemini name.
+
 ## What this does **not** fix
 
 - **Free-tier quota.** The Google free tier is per-model per-day (20 RPD on

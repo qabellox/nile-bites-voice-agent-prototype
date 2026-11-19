@@ -394,6 +394,10 @@ class GoogleProvider(_BaseProvider):
         # back empty with finish_reason=MAX_TOKENS. 0 disables it; None leaves
         # the provider default alone for a model that does not accept the knob.
         self.thinking_budget = thinking_budget
+        # The name we requested is not proof of what answered: hosted providers
+        # can alias or reroute a slug. Google returns the serving version in the
+        # response, so keep it here and let the pipeline record it separately.
+        self.model_version: str | None = None
         # Gemini 3 tools return an opaque ``thought_signature`` on the part that
         # carried the functionCall. Replaying that call without the signature is
         # an HTTP 400 on the next loop iteration, so keep it here until the
@@ -590,6 +594,9 @@ class GoogleProvider(_BaseProvider):
                 }
             ]
         resp = self.client.models.generate_content(**kwargs)
+        served = str(getattr(resp, "model_version", "") or "").strip()
+        if served:
+            self.model_version = served
         text_parts: list[str] = []
         calls: list[ToolCall] = []
         stop_reason: str | None = None
