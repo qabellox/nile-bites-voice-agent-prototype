@@ -10,15 +10,16 @@ files it points to. It stores verified state and pointers, never the full docs.
 ## 1. Verified state — snapshot 2026-11-19
 
 - Workspace: `C:\Users\Qebaa\Documents\Default Project\Egyptian_Arabic_English_Voice_Agent_Research`
-- Branch `main`, HEAD `ee000fa` ("fix(phone): let the model run the call …").
+- Branch `main`, HEAD `519532a` ("feat(phone): use Twilio-native ElevenLabs voice
+  in Say webhook").
 - Remotes:
   - `origin` → `github.com/qabellox/egyptian-arabic-english-voice-agent` (PRIVATE)
   - `prototype` → `github.com/qabellox/nile-bites-voice-agent-prototype` (PUBLIC)
-  - Both synced at `0b122db`; `ee000fa` + the cache commit push to both.
+  - Both were synced at `5e679b8`; `519532a` + the cache commit push to both.
 - Deployment: `https://nile-bites-voice-agent-prototype-ui.vercel.app` —
   `/healthz` now reports `llm`, `llm_provider`, `system_prompt_file`, `engine`,
   `direct_order_path`, `context_injection` (deploy not yet re-verified).
-- Suite: **469 tests, 0 failures, 0 errors, 0 skipped** (2026-11-19, `pytest`).
+- Suite: **471 tests, 0 failures, 0 errors, 0 skipped** (2026-11-19, `pytest`).
   Re-run before quoting counts. Note `addopts = "-q"` already: `-q -q` hides the
   summary line; use plain `pytest` to see the count.
 - `.env` present, untracked; `.gitignore` covers secrets, logs, audio, run outputs.
@@ -202,3 +203,4 @@ Browser mic → SpeechRecognition (ar-EG) → POST /api/chat
 | 2026-11-19 | 5e767bd | Record Gemini switch commit hash in context cache | doc review |
 | 2026-11-19 | 026fb83 | Record `llm_model_version` from Gemini's own response to prove model provenance | 467/0; live turn: provider google, model + version both `gemini-3.5-flash-lite` |
 | 2026-11-19 | 62ab588 | Twilio: fix invalid `ar-EG` on `<Say>` (valid only for `<Gather>`), separate ASR/TTS config, add ASR hints, opt-in HMAC signature validation, setup guide | 469/0; live webhooks 200 with valid TwiML; no real call yet (no account/number) |
+| 2026-11-19 | 519532a | Twilio webhook `<Say>` switched to Twilio-native ElevenLabs (Masry, Egyptian male), no extra `/api/tts` hop; bare-ID normalization + env override; setup guide updated | 471/0; TwiML asserts native ElevenLabs voice; live webhook recheck pending |
