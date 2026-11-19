@@ -31,14 +31,40 @@ from .config.loader import Config, load_config
 
 _LOG = logging.getLogger("nbva.phone")
 
+
+def _normalize_tts_voice(value: str | None) -> str:
+    """Accept either a bare ElevenLabs ID or an explicit ``Provider.Voice``.
+
+    Twilio's <Say> needs ``ElevenLabs.<Voice ID>``. Voice libraries show only
+    the 20-character ID, so add the provider prefix when it is missing. Values
+    that already carry a provider prefix (Google.*, Polly.*, ElevenLabs.*) pass
+    through unchanged, which keeps a non-ElevenLabs fallback configurable.
+    """
+    voice = str(value or "").strip()
+    if not voice or "." in voice:
+        return voice
+    if re.fullmatch(r"[A-Za-z0-9]{20}", voice):
+        return f"ElevenLabs.{voice}"
+    return voice
+
+
 # Twilio keeps two *different* language tables. `ar-EG` (Egyptian Arabic) is
 # valid for <Gather> speech recognition but is NOT a <Say> language; Twilio's
 # Arabic TTS codes are ar-AE, ar-XA and arb. An invalid language/voice pair can
 # make <Say> fail outright, so ASR and TTS must be configured separately.
-# Twilio has no Egyptian-Arabic TTS voice: ar-XA is Modern Standard Arabic.
+#
+# Highest quality the webhook can use without an extra HTTP loop: Twilio's
+# native ElevenLabs voices. Twilio synthesises server-side (Flash 2.5 for all
+# non-English locales), so there is no call from Twilio back to our /api/tts,
+# no ElevenLabs API key in the phone path, and no spend from our own ElevenLabs
+# account — the audio is billed on the Twilio number. The default voice is
+# "Masry", an Egyptian Arabic male voice tagged conversational in the
+# ElevenLabs library. Override with TWILIO_TTS_VOICE (bare ID or prefixed).
 ASR_LANGUAGE = os.getenv("TWILIO_ASR_LANGUAGE", "ar-EG")
 TTS_LANGUAGE = os.getenv("TWILIO_TTS_LANGUAGE", "ar-XA")
-TTS_VOICE = os.getenv("TWILIO_TTS_VOICE", "Google.ar-XA-Standard-A")
+TTS_VOICE = _normalize_tts_voice(
+    os.getenv("TWILIO_TTS_VOICE", "ElevenLabs.LXrTqFIgiubkrMkwvOUr")
+)
 # Biasing recognition with the restaurant's own vocabulary cuts the number of
 # misheard dish and zone names before the transcript ever reaches the model.
 ASR_HINTS = os.getenv(
@@ -809,7 +835,7 @@ class PhoneBridge:
 def _say(text: str, language: str | None = None, voice: str | None = None) -> str:
     """Build a <Say>. Defaults come from Twilio's *TTS* language table."""
     lang = language or TTS_LANGUAGE
-    spoken_voice = voice or TTS_VOICE
+    spoken_voice = _normalize_tts_voice(voice or TTS_VOICE)
     attrs = f'language="{html.escape(lang, quote=True)}"'
     if spoken_voice:
         attrs += f' voice="{html.escape(spoken_voice, quote=True)}"'
@@ -826,6 +852,7 @@ def twiml_response(
 
     Recognition uses Egyptian Arabic (``ar-EG``); speech synthesis uses a
     *different* language code because Twilio's <Say> table has no ``ar-EG``.
+    Synthesis itself is Twilio-native ElevenLabs — no extra HTTP hop.
     """
     parts = ['<?xml version="1.0" encoding="UTF-8"?><Response>']
     if gather:

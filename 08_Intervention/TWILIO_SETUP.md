@@ -28,13 +28,32 @@ invalid language/voice pair can make `<Say>` fail, which would have made the
 first call silent. Now:
 
 - recognition: `ar-EG` (Egyptian Arabic) + hints for dish/zone names;
-- synthesis: `language="ar-XA" voice="Google.ar-XA-Standard-A"` (Modern Standard
-  Arabic, female, standard tier — not beta).
+- synthesis: `language="ar-XA" voice="ElevenLabs.LXrTqFIgiubkrMkwvOUr"`.
 
-Twilio has **no Egyptian-Arabic TTS voice**. The caller can speak Egyptian
-Arabic; the reply will sound Modern Standard Arabic. That is a platform limit,
-not a prompt bug. Override with `TWILIO_TTS_LANGUAGE` / `TWILIO_TTS_VOICE` if a
-better voice becomes available.
+### Highest quality without an extra HTTP loop
+
+`<Say>` now uses **Twilio's native ElevenLabs voices** — the best TTS Twilio
+offers inside a plain webhook response. Twilio synthesises server-side with
+Flash 2.5 for non-English, so:
+
+- Twilio makes **no call back to our `/api/tts`** — no extra network hop;
+- the phone path needs **no `ELEVENLABS_API_KEY`** and spends **none** of our
+  ElevenLabs credits — audio is billed on the Twilio number;
+- the browser UI keeps its own ElevenLabs path unchanged.
+
+The default voice is **Masry** (`LXrTqFIgiubkrMkwvOUr`), a 20-character
+ElevenLabs ID tagged Egyptian Arabic male and "best for conversational" in the
+public voice library. Unlike the old Google Standard voice, this gives the
+reply an Egyptian accent. Trade-offs to know before the first call:
+
+- ElevenLabs voices in `<Say>` are **Public Beta** (announced 2026-09-09); the
+  Twilio SLA does not cover them and settings/SSML are limited.
+- Non-English always uses **Flash 2.5**; custom models and voice settings are
+  not selectable in `<Say>`. ElevenLabs **v4** needs `<ConversationRelay>` plus
+  a WebSocket host — a separate rewrite, not a webhook change.
+- `TWILIO_TTS_VOICE` also accepts a bare 20-character ID (the `ElevenLabs.`
+  prefix is added automatically) or an explicit fallback such as
+  `Google.ar-XA-Chirp3-HD-Aoede`. Change it in Vercel env, no code edit.
 
 ## Blocker — must be done by an adult/guardian
 
@@ -76,7 +95,7 @@ Account SID + Auth Token and the number SID; do not paste those into chat.
 |---|---|---|
 | `TWILIO_ASR_LANGUAGE` | `ar-EG` | Recognition language for `<Gather>` |
 | `TWILIO_TTS_LANGUAGE` | `ar-XA` | **Must** be a valid `<Say>` language |
-| `TWILIO_TTS_VOICE` | `Google.ar-XA-Standard-A` | Twilio voice name |
+| `TWILIO_TTS_VOICE` | `ElevenLabs.LXrTqFIgiubkrMkwvOUr` | Twilio-native ElevenLabs voice (Masry, Egyptian male); bare ID or `Provider.Voice` accepted |
 | `TWILIO_ASR_HINTS` | dish + zone names | Improves recognition of menu items |
 | `TWILIO_VALIDATE_SIGNATURES` | off | Set to `1` to require `X-Twilio-Signature` |
 | `TWILIO_AUTH_TOKEN` | none | Required only when validation is on |
@@ -113,11 +132,14 @@ payment method.
 3. `GET /healthz`: must report `llm_provider: google`,
    `llm: gemini-3.5-flash-lite`, `direct_order_path: false`.
 4. If `<Say>` errors in Twilio's logs, the language/voice pair is invalid —
-   check `TWILIO_TTS_LANGUAGE` and `TWILIO_TTS_VOICE`.
+   check `TWILIO_TTS_LANGUAGE` (`ar-XA`) and `TWILIO_TTS_VOICE`. If an
+   ElevenLabs voice is unavailable in your region, set `TWILIO_TTS_VOICE` to
+   `Google.ar-XA-Chirp3-HD-Aoede` as a fallback (lower quality, still generative).
 5. If the caller hears the "can't hear you" fallback repeatedly, the issue is
    Twilio ASR, not the agent: check `language="ar-EG"` and the `hints` attribute.
 
 ## Tests
 
-`469 passed` locally (`python -m pytest`), including TwiML language separation,
-XML escaping, and signature-validation accept/reject cases.
+`471 passed` locally (`python -m pytest`), including TwiML language separation,
+the native ElevenLabs voice, bare-ID normalization, voice configurability, XML
+escaping, and signature-validation accept/reject cases.

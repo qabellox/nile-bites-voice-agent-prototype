@@ -76,12 +76,18 @@ Browser mic → SpeechRecognition (ar-EG) → POST /api/chat
   require an adult/guardian (owner is 16). Exact console steps and costs:
   `08_Intervention/TWILIO_SETUP.md`. Web UI and Vercel domain are preserved.
 - Twilio `<Gather>` uses `ar-EG` (valid ASR); `<Say>` must use a *different*
-  valid TTS language (`ar-XA` + `Google.ar-XA-Standard-A`) — `ar-EG` on `<Say>`
-  is invalid and would have silenced the first call. Twilio has no Egyptian TTS
-  voice. Webhook signature validation is opt-in via `TWILIO_VALIDATE_SIGNATURES=1`
-  + `TWILIO_AUTH_TOKEN`; off by default so it cannot block the first call.
-- ElevenLabs TTS (`ELEVENLABS_API_KEY`, voice `EXAVITQu4vr4xnSDxMaL`,
-  `eleven_flash_v2_5`).
+  valid TTS language (`ar-XA`) — `ar-EG` on `<Say>` is invalid and would have
+  silenced the first call. Webhook signature validation is opt-in via
+  `TWILIO_VALIDATE_SIGNATURES=1` + `TWILIO_AUTH_TOKEN`; off by default so it
+  cannot block the first call.
+- **Twilio `<Say>` now uses native ElevenLabs** (Public Beta): default
+  `voice="ElevenLabs.LXrTqFIgiubkrMkwvOUr"` (Masry, Egyptian male, conversational)
+  with `language="ar-XA"`. Twilio synthesises with Flash 2.5 for Arabic — no
+  extra HTTP loop, no `ELEVENLABS_API_KEY` in the phone path, billed on the
+  Twilio number. `TWILIO_TTS_VOICE` accepts a bare 20-char ID or `Provider.Voice`.
+  ElevenLabs v4 still needs `<ConversationRelay>` + a WebSocket host (not done).
+- Browser `/api/tts` still uses ElevenLabs (`ELEVENLABS_API_KEY`, voice
+  `EXAVITQu4vr4xnSDxMaL`, `eleven_flash_v2_5`); unchanged by the phone path.
 - Browser ASR is **not** server-grade: it can mishear a spoken quantity before
   the server sees it. Server-side Arabic ASR with confidence/n-best = P0.
 - Engineering evidence (tests, demo, healthz) ≠ research findings.

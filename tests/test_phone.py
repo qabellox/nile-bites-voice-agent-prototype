@@ -11,6 +11,7 @@ from nbva.phone import (
     _conversation_note,
     _find_order_lines,
     _quantity_from_text,
+    _normalize_tts_voice,
     _split_for_speech,
     create_phone_app,
     twiml_response,
@@ -53,12 +54,43 @@ def test_twiml_escapes_text_and_contains_gather():
 
 
 def test_twiml_uses_separate_valid_languages_for_recognition_and_speech():
-    """ar-EG is a Gather language, not a Say language in Twilio."""
+    """ar-EG is a Gather language, not a Say language in Twilio.
+
+    <Say> uses Twilio's native ElevenLabs voice so there is no extra HTTP hop
+    through our own /api/tts. The voice is an Egyptian Arabic male voice.
+    """
     body = twiml_response("أهلاً").get_data(as_text=True)
     assert '<Gather input="speech" language="ar-EG"' in body
-    assert '<Say language="ar-XA" voice="Google.ar-XA-Standard-A">' in body
+    assert '<Say language="ar-XA" voice="ElevenLabs.LXrTqFIgiubkrMkwvOUr">' in body
     assert "language=\"ar-EG\"" not in body.split("</Gather>")[1]
     assert "hints=" in body
+
+
+def test_tts_voice_accepts_bare_elevenlabs_id_and_explicit_provider():
+    """Twilio needs ElevenLabs.<ID>; a bare library ID must be prefixed."""
+    assert (
+        _normalize_tts_voice("LXrTqFIgiubkrMkwvOUr")
+        == "ElevenLabs.LXrTqFIgiubkrMkwvOUr"
+    )
+    assert (
+        _normalize_tts_voice(" ElevenLabs.LXrTqFIgiubkrMkwvOUr ")
+        == "ElevenLabs.LXrTqFIgiubkrMkwvOUr"
+    )
+    # Non-ElevenLabs fallbacks stay untouched.
+    assert (
+        _normalize_tts_voice("Google.ar-XA-Chirp3-HD-Aoede")
+        == "Google.ar-XA-Chirp3-HD-Aoede"
+    )
+    assert _normalize_tts_voice("") == ""
+
+
+def test_twilio_tts_voice_is_configurable_without_code_change(tmp_path, monkeypatch):
+    """A fallback voice can be selected from Vercel env alone."""
+    import nbva.phone as phone
+
+    monkeypatch.setattr(phone, "TTS_VOICE", "Google.ar-XA-Chirp3-HD-Aoede")
+    body = phone.twiml_response("أهلاً").get_data(as_text=True)
+    assert 'voice="Google.ar-XA-Chirp3-HD-Aoede"' in body
 
 
 def test_twilio_signature_validation_rejects_forged_webhooks(tmp_path: Path, monkeypatch):
