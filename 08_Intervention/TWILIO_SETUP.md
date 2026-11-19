@@ -12,9 +12,25 @@ valid TwiML:
 
 | Webhook | Verified result |
 |---|---|
-| `POST /twilio/voice` | `<Gather input="speech" language="ar-EG" ...>` + greeting |
-| `POST /twilio/gather` | Arabic `SpeechResult` reached Gemini and produced a real reply |
+| `POST /twilio/voice` | HTTP 200; `<Gather input="speech" language="ar-EG" ...>` + greeting; `<Say language="ar-XA" voice="ElevenLabs.LXrTqFIgiubkrMkwvOUr">`; Arabic intact over the wire |
+| `POST /twilio/gather` | HTTP 200; Arabic `SpeechResult` reached Gemini and produced a real reply in the same voice |
 | `POST /twilio/hangup` | ends the in-memory call session |
+
+Verified again after the native-ElevenLabs change (2026-11-19): both webhooks
+returned HTTP 200 with `voice="ElevenLabs.LXrTqFIgiubkrMkwvOUr"`, 163 Arabic
+codepoints intact, and `/healthz` still reports `llm_provider: google` /
+`gemini-3.5-flash-lite` / `direct_order_path: false`.
+
+**Vercel Security Checkpoint note:** during verification, repeated POSTs from one
+IP briefly triggered Vercel's *automatic* WAF challenge (HTTP 403,
+`X-Vercel-Mitigated: challenge`). There is **no custom firewall rule** on this
+project (`active: null`, no versions) — it was automatic mitigation from my own
+probing and cleared on its own; a plain request and a `Twilio/1.0` user-agent
+both then returned 200. This does not need a config change and will not block
+Twilio, whose requests come from different IPs. If it ever recurs for a real
+call, check Firewall → Traffic in the Vercel dashboard rather than changing
+code. It is separate from deployment protection; the bypass token does not
+affect it.
 
 Routing uses the existing Vercel routes in `vercel.json`; no domain or UI was
 replaced.
