@@ -172,6 +172,211 @@ def test_the_stub_llm_without_a_plan_calls_no_tools(tmp_path):
     assert "scripted stub" in response.text
 
 
+# -- google transcript translation ------------------------------------------
+#
+# Gemini does not accept the OpenAI-shaped transcript the tool loop keeps. It
+# needs ``functionCall`` parts on the model turn and ``functionResponse`` parts
+# on the user turn that answers them. Flattening both to plain text - the
+# previous behaviour - left the model unable to see that its call had been
+# answered, which is fatal for a tool-calling agent and invisible in a unit test
+# unless the translation itself is pinned.
+
+
+def test_google_turns_an_assistant_tool_call_into_a_function_call_part():
+    from nbva.llm.providers import GoogleProvider
+
+    contents = GoogleProvider._to_contents(
+        [
+            {"role": "system", "content": "أنت موظف استقبال."},
+            {"role": "user", "content": "عايز برجر"},
+            {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": [
+                    {
+                        "id": "c1",
+                        "type": "function",
+                        "function": {
+                            "name": "get_price",
+                            "arguments": '{"item": "NB-BURG-001", "quantity": 2}',
+                        },
+                    }
+                ],
+            },
+        ]
+    )
+
+    assert [c["role"] for c in contents] == ["user", "model"]
+    call = contents[1]["parts"][0]["functionCall"]
+    assert call["name"] == "get_price"
+    assert call["args"] == {"item": "NB-BURG-001", "quantity": 2}
+
+
+def test_google_turns_a_tool_result_into_a_function_response_part():
+    from nbva.llm.providers import GoogleProvider
+
+    contents = GoogleProvider._to_contents(
+        [
+            {"role": "user", "content": "عايز برجر"},
+            {
+                "role": "tool",
+                "name": "get_price",
+                "tool_call_id": "c1",
+                "content": '{"ok": true, "total": 350}',
+            },
+        ]
+    )
+
+    assert contents[-1]["role"] == "user"
+    response = contents[-1]["parts"][0]["functionResponse"]
+    assert response["name"] == "get_price"
+    assert response["response"] == {"ok": True, "total": 350}
+
+
+def test_google_wraps_a_non_json_tool_result_instead_of_crashing():
+    from nbva.llm.providers import GoogleProvider
+
+    contents = GoogleProvider._to_contents(
+        [{"role": "tool", "name": "get_price", "content": "engine error"}]
+    )
+    assert contents[0]["parts"][0]["functionResponse"]["response"] == {
+        "result": "engine error"
+    }
+
+
+def test_google_drops_an_empty_assistant_turn():
+    from nbva.llm.providers import GoogleProvider
+
+    contents = GoogleProvider._to_contents(
+        [
+            {"role": "user", "content": "أهلاً"},
+            {"role": "assistant", "content": "", "tool_calls": []},
+        ]
+    )
+    # An empty text part is rejected by the API; the turn must simply vanish.
+    assert [c["role"] for c in contents] == ["user"]
+
+
+def test_google_keeps_text_and_a_call_in_the_same_model_turn():
+    from nbva.llm.providers import GoogleProvider
+
+    contents = GoogleProvider._to_contents(
+        [
+            {
+                "role": "assistant",
+                "content": "ثانية واحدة.",
+                "tool_calls": [
+                    {
+                        "function": {"name": "search_menu", "arguments": "{}"},
+                    }
+                ],
+            }
+        ]
+    )
+    parts = contents[0]["parts"]
+    assert parts[0] == {"text": "ثانية واحدة."}
+    assert parts[1]["functionCall"] == {"name": "search_menu", "args": {}}
+
+
+def test_google_reattaches_a_thought_signature_to_a_replayed_call():
+    """Gemini 3 rejects a replayed functionCall without its signature."""
+    from nbva.llm.providers import GoogleProvider
+
+    contents = GoogleProvider._to_contents(
+        [
+            {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": [
+                    {
+                        "id": "c1",
+                        "function": {"name": "get_price", "arguments": "{}"},
+                    }
+                ],
+            }
+        ],
+        {"c1": b"opaque-signature"},
+    )
+    part = contents[0]["parts"][0]
+    assert part["functionCall"]["name"] == "get_price"
+    assert part["thought_signature"] == b"opaque-signature"
+
+
+def test_google_strips_json_schema_keys_that_gemini_rejects():
+    """Gemini answers an unknown schema key with a 400 for the whole request."""
+    from nbva.llm.providers import GoogleProvider
+
+    raw = {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "lines": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "properties": {"quantity": {"type": "integer", "minimum": 1}},
+                },
+            }
+        },
+    }
+    cleaned = GoogleProvider._gemini_parameters(raw)
+
+    assert "additionalProperties" not in str(cleaned)
+    assert cleaned["properties"]["lines"]["items"]["properties"]["quantity"] == {
+        "type": "integer",
+        "minimum": 1,
+    }
+
+
+def test_google_schema_filter_handles_the_real_tool_registry(repo, orders):
+    from nbva.llm.providers import GoogleProvider
+    from nbva.tools.registry import build_default_registry
+
+    registry = build_default_registry(repo, orders)
+    schemas = registry.llm_schemas()
+    assert schemas and any("additionalProperties" in str(s) for s in schemas)
+
+    for schema in schemas:
+        # ``complete`` sends only the parameters object through the filter.
+        cleaned = GoogleProvider._gemini_parameters(schema["function"]["parameters"])
+        assert "additionalProperties" not in str(cleaned)
+        assert cleaned["type"] == "object"
+        assert cleaned["properties"]
+
+
+def test_the_provider_model_is_used_when_the_top_level_model_is_blank(
+    tmp_path, monkeypatch
+):
+    """``llm.google.model`` must not be dead config behind ``llm.model: ''``."""
+    from nbva.llm import providers as module
+
+    seen: dict = {}
+
+    class Recorder(module._BaseProvider):
+        name = "recorder"
+
+        def __init__(self, model, **kw):
+            super().__init__(model, **kw)
+            seen["model"] = model
+            seen["kw"] = kw
+
+    monkeypatch.setitem(module.PROVIDERS, "recorder", Recorder)
+    cfg = overlay(
+        tmp_path,
+        "llm:\n"
+        "  provider: recorder\n"
+        "  model: ''\n"
+        "  recorder:\n"
+        "    model: gemini-2.5-flash\n"
+        "    thinking_budget: 0\n",
+    )
+    module.build_provider(cfg)
+
+    assert seen["model"] == "gemini-2.5-flash"
+    assert seen["kw"]["thinking_budget"] == 0
+
+
 # -- preflight hooks --------------------------------------------------------
 #
 # ``nbva preflight`` reports whether a run could start. These tests pin the

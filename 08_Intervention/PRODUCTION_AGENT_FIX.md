@@ -160,12 +160,61 @@ reply. Tests: `test_arabic_numeral_prices_are_compared_as_the_same_number`,
 
 ---
 
+## Switch to Google Gemini (same day, live)
+
+OpenRouter free gives 50 requests/day and paid models return 402 with zero
+credit. I switched production to the Gemini free tier instead. The provider is
+now env-selected (`LLM_PROVIDER=google`, `GOOGLE_MODEL`, `GEMINI_API_KEY`), so
+switching back needs no code edit. Four real defects blocked that switch; all
+were found by running the exact production path, not by reading code:
+
+| # | Symptom | Cause | Fix |
+|---|---------|-------|-----|
+| 10 | Every tool turn failed locally; menu came from a template | `GoogleProvider` sent `role: "tool"` as plain user text and parsed only `.text` | Translate to `functionCall` / `functionResponse` parts; parse parts, not `.text` |
+| 11 | HTTP 400 `INVALID_ARGUMENT` on every tool call | Tool schemas carry `additionalProperties: False`; Gemini rejects the whole request on unknown schema keys | Filter parameter schemas to Gemini's supported keywords (recursively) |
+| 12 | HTTP 500 `ModuleNotFoundError: No module named 'google'` on Vercel | `@vercel/python` installs from **pyproject.toml**, not requirements.txt; `google-genai` was only in an optional extra | Add it to base dependencies in `pyproject.toml` |
+| 13 | HTTP 400 again on Vercel while local worked | `google-genai>=1.0` resolved to 3.6.1 on Vercel; local had 2.11.0 | Pin `google-genai==2.11.0` in both dependency files |
+| 14 | Gemini 3 rejected the second tool round: "Function call is missing a thought_signature" | Gemini 3 returns an opaque signature on each `functionCall` part; replaying the call without it is a 400 | Cache signatures by call id (name as fallback) and reattach them when translating the transcript |
+
+Also discovered: `gemini-3.5-flash-lite` answers 400 to `thinking_config` at all,
+and `gemini-2.5-flash` free tier is capped at **5 requests/minute and 20/day**
+(the 3-turn probe uses 5+ LLM requests). Config now sends `thinking_budget: null`
+so one env switch works on both models. A 429 from that quota was observed live
+and logged; it is a quota, not a code fault. Steps 12–14 each needed a redeploy
+and a live probe to find — none showed up in the 467-test suite until the tests
+were written against the observed requests.
+
+**Model choice: `gemini-3.5-flash-lite`.** `gemini-2.5-flash` worked but burned
+the daily free quota during verification; `gemini-3.8-flash` returned 503 under
+high demand. The lite model produced more natural Egyptian Arabic in the same
+probe and stayed under a second per model call.
+
+**Live conversation (fresh call, one session, deployed on Vercel):**
+
+| Turn | Caller | Reply (abridged) | Wall time | Tools |
+|------|--------|------------------|-----------|-------|
+| 1 | "إنتوا بتوصلوا مدينة نصر؟ وفيه إيه برجر عندكم؟" | zone + ETA, three burgers with real prices | 3.4 s | `get_delivery_info`, `search_menu` |
+| 2 | "عايز اتنين برجر حلومي" | "برجر الحلومي المشوي متاح وسعره ١٧٥ جنيه. أسجل لحضرتك اتنين منه؟" | 1.9 s | `search_menu` |
+| 3 | "تمام، أكده" | order registered, ٣٥٠ جنيه, free delivery, ٣٥–٥٠ دقيقة | 3.3 s | `get_delivery_info`, `create_order`, `confirm_order` |
+
+`grounding_violations = []` on all three turns; no template fallback and no
+apology line. `/healthz` reported `llm_provider: google`,
+`llm: gemini-3.5-flash-lite`, production prompt, `direct_order_path: false`.
+
 ## What this does **not** fix
 
-- **OpenRouter credit.** Paid models return 402 on this account, so production
-  runs the free model. Adding credit needs a payment method in the account
-  owner's name (adult/guardian for a minor). Until then, `OPENAI_MODEL` must stay
-  on a `:free` slug or every turn falls back to template text.
+- **Free-tier quota.** The Google free tier is per-model per-day (20 RPD on
+  2.5-flash), and a tool loop can use several requests per spoken turn. A busy
+  demo will hit 429. Paid tier removes that limit but needs a card in the
+  account owner's name (adult/guardian for a minor).
+- **Free-tier privacy.** Google may use free-tier inputs to improve products.
+  Fine for this fictional restaurant; **not** for real participant data. Use a
+  paid tier or a different provider for the study.
+- **OpenRouter credit.** Paid models return 402 on this account, so OpenRouter is
+  still unusable for paid inference. Adding credit needs a card in the account
+  owner's name (adult/guardian for a minor). OpenRouter remains the intended
+  study backbone because one key reaches many vendors; it is not currently the
+  prototype's provider.
 - **Model choice.** If the deployment runs a weak or free model, it will still
   answer like a weak model. `/healthz` makes that visible; picking the model is
   the owner's decision, and the research pair is still unselected.

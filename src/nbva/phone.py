@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import html
 import io
+import logging
 import re
 import sqlite3
 import threading
@@ -23,6 +24,8 @@ from flask import Flask, Response, jsonify, request, send_file
 
 from .agent.app import AgentApp, build_app
 from .config.loader import Config, load_config
+
+_LOG = logging.getLogger("nbva.phone")
 
 
 def _utc_now() -> str:
@@ -718,6 +721,12 @@ class PhoneBridge:
             text=clean_text, speak=False, context_note=note
         )
         session.app.logger.log_turn(result.turn)
+        if result.error:
+            # Provider failures used to be invisible: the caller heard an
+            # apology and the logs showed nothing but a 500-free request. Keep
+            # the reason server-side so `vercel logs` can tell a bad key from a
+            # bad schema or a model that is out of credit.
+            _LOG.error("turn failed: %s", result.error)
         response_text = result.response_text.strip()
         fallback_response = _direct_fallback_response(
             session.app.repository, clean_text

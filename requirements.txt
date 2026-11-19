@@ -24,7 +24,7 @@ pyttsx3>=2.90
 # --- hosted LLM providers (only needed if not using a local server) ---
 openai>=1.30
 # anthropic>=0.30
-# google-genai>=1.0
+google-genai==2.11.0
 
 # --- development ---
 pytest>=8.0

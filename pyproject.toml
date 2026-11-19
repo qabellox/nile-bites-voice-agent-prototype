@@ -18,6 +18,12 @@ dependencies = [
     "soundfile>=0.12",
     "flask>=3.0",
     "openai>=1.30",
+    # Vercel installs this project's base dependencies from pyproject.toml, not
+    # requirements.txt. A Google provider that imports google.genai at runtime
+    # dies with ModuleNotFoundError if it lives only in the llm-hosted extra.
+    # Pinned: 3.x changed the request shape and returns HTTP 400 for calls that
+    # 2.11 accepts. The adapter is written against 2.x; do not let uv drift it.
+    "google-genai==2.11.0",
     "edge-tts>=6.1",
     "elevenlabs>=2.77",
 ]

@@ -18,7 +18,7 @@ files it points to. It stores verified state and pointers, never the full docs.
 - Deployment: `https://nile-bites-voice-agent-prototype-ui.vercel.app` —
   `/healthz` now reports `llm`, `llm_provider`, `system_prompt_file`, `engine`,
   `direct_order_path`, `context_injection` (deploy not yet re-verified).
-- Suite: **458 tests, 0 failures, 0 errors, 0 skipped** (2026-11-19, `pytest`).
+- Suite: **467 tests, 0 failures, 0 errors, 0 skipped** (2026-11-19, `pytest`).
   Re-run before quoting counts. Note `addopts = "-q"` already: `-q -q` hides the
   summary line; use plain `pytest` to see the count.
 - `.env` present, untracked; `.gitignore` covers secrets, logs, audio, run outputs.
@@ -61,9 +61,13 @@ Browser mic → SpeechRecognition (ar-EG) → POST /api/chat
   untouched.
 - `_direct_order_response` (keyword/template path) is still present and tested;
   reachable only with `phone.direct_order_path: true`.
-- Entry `api/index.py` (Vercel): model from `OPENAI_MODEL`, default
-  `nvidia/nemotron-3-ultra-550b-a55b:free` with a startup warning;
+- Entry `api/index.py` (Vercel): provider from `LLM_PROVIDER`. `google` uses
+  `GEMINI_API_KEY` + `GOOGLE_MODEL` (live: `gemini-3.5-flash-lite`); otherwise
+  `OPENAI_MODEL` with the OpenRouter free default and a startup warning.
   `llm.max_tokens 500`, `temperature 0.25`, `timeout 35s`.
+- `@vercel/python` installs base deps from **pyproject.toml**, not
+  requirements.txt. `google-genai==2.11.0` is pinned there; 3.x sends a request
+  shape this provider adapter does not use and returns HTTP 400.
 - Routes in `src/nbva/phone.py`: `GET /`, `GET /healthz`, `POST /api/chat`,
   `POST /api/tts`, `/twilio/voice`, `/twilio/gather`, `/twilio/hangup`.
 - ElevenLabs TTS (`ELEVENLABS_API_KEY`, voice `EXAVITQu4vr4xnSDxMaL`,
@@ -77,7 +81,8 @@ Browser mic → SpeechRecognition (ar-EG) → POST /api/chat
 1. ~~Protocol framed baseline vs streaming over C0–C4~~ — RESOLVED 2026-11-18;
    archived at `01_Research_Design/_superseded/EXPERIMENT_PROTOCOL_v1_*.md`.
 2. Provider drift: `config/llm.yaml` says `qwen2.5:7b-instruct` +
-   `openai_compatible`; production model comes from hidden `OPENAI_MODEL`.
+   `openai_compatible` (google section: `gemini-2.5-flash`); production comes
+   from hidden `LLM_PROVIDER` / `GOOGLE_MODEL` env vars.
    `config/tts.yaml` says `edge` / `ar-EG-SalmaNeural`; production uses
    ElevenLabs. The config files describe the instrument, not production.
 3. **P-10 unresolved:** latency cutoff 10s in config is dead; effective 120s;
@@ -112,15 +117,22 @@ Browser mic → SpeechRecognition (ar-EG) → POST /api/chat
   quantity 1; amnesiac message history (no tool results/order state); scope gate
   refusing Arabic greetings; research prompt serving production; full-reply TTS
   before any audio; invisible model default.
-- **Owner action:** `OPENAI_MODEL` is now set in Vercel Production. Paid models
-  (`openai/gpt-4.1`, `openai/gpt-4o`, …) return **402 Payment Required** — the
-  OpenRouter account has no credit. Production therefore runs
-  `nvidia/nemotron-3-ultra-550b-a55b:free`, which works on the same key. Adding
-  credit requires a card in the account owner's name (adult/guardian).
-- **Live behaviour after the fix** (verified by direct API calls, 3 turns):
-  zone + menu answer with tool calls, order preview with the real total, then a
-  demand for the exact delivery zone instead of inventing one;
-  `grounding_violations = []`; 2.5 / 6.4 / 10.6 s per turn on the free model.
+- **Production provider switched to Gemini (live, 2026-11-19).** Vercel env:
+  `LLM_PROVIDER=google`, `GEMINI_API_KEY`, `GOOGLE_MODEL=gemini-3.5-flash-lite`.
+  OpenRouter paid models return 402 (no credit); its free tier is 50 req/day.
+  Gemini free tier has per-model quota (5 RPM / 20 RPD on 2.5-flash) and may use
+  inputs for product training — not for real participant data. A key was pasted
+  by the owner for verification; it must be revoked and replaced with a secure
+  key. Never commit it.
+- **Live behaviour on the deployed Gemini path** (fresh 3-turn call): real tool
+  calls on every turn (`get_delivery_info`, `search_menu`, `create_order`,
+  `confirm_order`), Arabic prices, order closed with total and ETA;
+  `grounding_violations = []`; 3.4 / 1.9 / 3.3 s per turn. Details and the five
+  extra provider defects found while deploying:
+  `08_Intervention/PRODUCTION_AGENT_FIX.md`.
+- **Research instrument unchanged:** A0 prompt/script frozen; `context_note=None`
+  stays the default so A0 message lists are byte-identical. Free-tier provider
+  choice is production-only and is not a model-pair decision for the study.
 - **A0/A1 switch: DONE (Phase 1).** `architecture.engine` selects the arm via
   `src/nbva/arch/base.py::build_turn_engine`. A0 = frozen `BaselinePipeline`,
   `a1` raises on purpose — never silently falls back. `AgentApp.engine_id`,
@@ -170,3 +182,4 @@ Browser mic → SpeechRecognition (ar-EG) → POST /api/chat
 | 2026-11-18 | 0b122db | Paired stats design + Phase 2 spec; P-11 corrected; Stage 2a gateway | 444/0; schema parity |
 | 2026-11-19 | ee000fa | Production agent fix: model drives every turn, order state injected, progressive speech, model visible in `/healthz` | 456/0 (12 new phone tests); node --check ui.html |
 | 2026-11-19 | 546b4d0 | Grounding compares Arabic-Indic digits as numbers; Vercel `OPENAI_MODEL` set + redeployed; paid models 402 (no credit) → free model live | 458/0; live 3-turn probe, violations `[]` |
+| 2026-11-19 | pending | Google provider rewritten for Gemini parts, schema filtering, thought signatures; env-driven provider; dependency pinned; 5 deployment defects fixed; production switched to `gemini-3.5-flash-lite` | 467/0; live 3-turn probe, violations `[]`, 3.4/1.9/3.3 s |

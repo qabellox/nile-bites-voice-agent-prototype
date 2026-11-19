@@ -25,24 +25,42 @@ config.set("logging.audio_dir", "/tmp/nbva-audio")
 config.set("llm.max_tokens", 500)
 config.set("llm.temperature", 0.25)
 config.set("llm.timeout_seconds", 35)
-model = os.environ.get("OPENAI_MODEL", "").strip()
-if not model:
-    # The model IS the agent's intelligence. Falling back silently to whatever
-    # default is in the repo is how the deployed prototype ended up answering
-    # worse than the model the owner thought was live. Say it out loud instead.
-    _LOG.warning(
-        "OPENAI_MODEL is not set; falling back to %r. Set OPENAI_MODEL to the "
-        "model you intend to run and check /healthz to confirm it is live.",
-        DEFAULT_MODEL,
+
+# The provider is chosen by environment so switching never needs a code edit.
+provider = (os.environ.get("LLM_PROVIDER") or "").strip().lower()
+if provider:
+    config.set("llm.provider", provider)
+provider = str(config.get("llm.provider") or "openai_compatible").strip().lower()
+
+if provider == "google":
+    model = (os.environ.get("GOOGLE_MODEL") or "").strip() or str(
+        config.get("llm.google.model") or "gemini-2.5-flash"
     )
-    model = DEFAULT_MODEL
+    if not os.environ.get("GEMINI_API_KEY"):
+        _LOG.warning(
+            "llm.provider=google but GEMINI_API_KEY is not set; every turn will "
+            "fail. Set it in the project environment."
+        )
+    _LOG.info("llm.provider=google model=%s", model)
+else:
+    model = os.environ.get("OPENAI_MODEL", "").strip()
+    if not model:
+        # The model IS the agent's intelligence. Falling back silently to whatever
+        # default is in the repo is how the deployed prototype ended up answering
+        # worse than the model the owner thought was live. Say it out loud instead.
+        _LOG.warning(
+            "OPENAI_MODEL is not set; falling back to %r. Set OPENAI_MODEL to the "
+            "model you intend to run and check /healthz to confirm it is live.",
+            DEFAULT_MODEL,
+        )
+        model = DEFAULT_MODEL
+    if os.environ.get("OPENAI_BASE_URL"):
+        config.set("llm.base_url", os.environ["OPENAI_BASE_URL"])
+        config.set("llm.openai_compatible.base_url", os.environ["OPENAI_BASE_URL"])
+    if os.environ.get("OPENAI_API_KEY"):
+        config.set("llm.openai_compatible.api_key_env", "OPENAI_API_KEY")
+        config.set("llm.openai_compatible.api_key_fallback", "")
 config.set("llm.model", model)
-if os.environ.get("OPENAI_BASE_URL"):
-    config.set("llm.base_url", os.environ["OPENAI_BASE_URL"])
-    config.set("llm.openai_compatible.base_url", os.environ["OPENAI_BASE_URL"])
-if os.environ.get("OPENAI_API_KEY"):
-    config.set("llm.openai_compatible.api_key_env", "OPENAI_API_KEY")
-    config.set("llm.openai_compatible.api_key_fallback", "")
 app = create_phone_app(
     config=config,
     memory_path=Path(

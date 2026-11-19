@@ -5,7 +5,11 @@ llm:
     model: claude-sonnet-4-5
   google:
     api_key_env: GEMINI_API_KEY
-    model: gemini-2.0-flash
+    model: gemini-2.5-flash
+    # 0 works on gemini-2.5-flash but gemini-3.5-flash-lite answers HTTP 400 to
+    # any thinking_config at all. null omits the knob and works on both, so a
+    # GOOGLE_MODEL switch does not silently break every tool call.
+    thinking_budget: null
   max_tokens: 400
   max_tool_iterations: 6
   model: qwen2.5:7b-instruct

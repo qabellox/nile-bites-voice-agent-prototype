@@ -377,11 +377,29 @@ def _strip_anthropic_tools(message: dict[str, Any]) -> dict[str, Any]:
 class GoogleProvider(_BaseProvider):
     name = "google"
 
-    def __init__(self, model: str, api_key_env: str = "GEMINI_API_KEY", **kw: Any):
+    def __init__(
+        self,
+        model: str,
+        api_key_env: str = "GEMINI_API_KEY",
+        thinking_budget: int | None = 0,
+        **kw: Any,
+    ):
         super().__init__(model, **kw)
+        self.api_key_env = api_key_env
         self.api_key = _env_key(api_key_env, "")
         if not self.api_key:
             raise RuntimeError(f"{api_key_env} is not set.")
+        # Gemini Flash models spend part of the output budget on "thinking"
+        # tokens. max_output_tokens counts those, so a spoken reply could come
+        # back empty with finish_reason=MAX_TOKENS. 0 disables it; None leaves
+        # the provider default alone for a model that does not accept the knob.
+        self.thinking_budget = thinking_budget
+        # Gemini 3 tools return an opaque ``thought_signature`` on the part that
+        # carried the functionCall. Replaying that call without the signature is
+        # an HTTP 400 on the next loop iteration, so keep it here until the
+        # transcript comes back around. Keyed by call id, with the tool name as
+        # fallback for models that omit ids.
+        self._signatures: dict[str, bytes] = {}
         from google import genai
         from google.genai import types
 
@@ -400,17 +418,151 @@ class GoogleProvider(_BaseProvider):
             return "blocked", f"google endpoint did not answer: {type(exc).__name__}: {exc}"
         return "ready", None
 
+    @staticmethod
+    def _to_contents(
+        messages: list[dict[str, Any]], signatures: dict[str, bytes] | None = None
+    ) -> list[dict[str, Any]]:
+        """Translate the loop's OpenAI-shaped transcript into Gemini contents.
+
+        The tool loop records tool results as ``role: "tool"`` with a
+        ``tool_call_id``, and assistant turns as ``tool_calls`` with JSON-string
+        arguments. Gemini needs those as ``functionResponse`` / ``functionCall``
+        parts inside ``user`` / ``model`` turns. Flattening them to plain text —
+        the previous behaviour — left the model unable to see that a call had
+        been answered, which is the one thing a tool-calling agent cannot lose.
+        """
+        contents: list[dict[str, Any]] = []
+        for message in messages:
+            role = message.get("role")
+            if role == "system":
+                continue
+
+            if role == "assistant":
+                parts: list[dict[str, Any]] = []
+                text = str(message.get("content") or "").strip()
+                if text:
+                    parts.append({"text": text})
+                for call in message.get("tool_calls") or []:
+                    function = call.get("function") or {}
+                    raw_args = function.get("arguments")
+                    if isinstance(raw_args, str):
+                        try:
+                            args = json.loads(raw_args) if raw_args.strip() else {}
+                        except ValueError:
+                            args = {}
+                    else:
+                        args = raw_args
+                    part: dict[str, Any] = {
+                        "functionCall": {
+                            "name": function.get("name"),
+                            "args": args if isinstance(args, dict) else {},
+                        }
+                    }
+                    signature = (signatures or {}).get(
+                        str(call.get("id") or function.get("name") or "")
+                    )
+                    if signature:
+                        part["thought_signature"] = signature
+                    parts.append(part)
+                if parts:
+                    contents.append({"role": "model", "parts": parts})
+                continue
+
+            if role == "tool":
+                raw = message.get("content")
+                try:
+                    payload = json.loads(raw) if isinstance(raw, str) else raw
+                except ValueError:
+                    payload = {"result": raw}
+                if not isinstance(payload, dict):
+                    payload = {"result": payload}
+                contents.append(
+                    {
+                        "role": "user",
+                        "parts": [
+                            {
+                                "functionResponse": {
+                                    "name": str(message.get("name") or "tool"),
+                                    "response": payload,
+                                }
+                            }
+                        ],
+                    }
+                )
+                continue
+
+            contents.append(
+                {
+                    "role": "user",
+                    "parts": [{"text": str(message.get("content") or "")}],
+                }
+            )
+        return contents
+
+    #: Parameter keywords Gemini's ``Schema`` accepts. Google rejects the whole
+    #: request on any unknown key (HTTP 400 INVALID_ARGUMENT), so the tool schema
+    #: has to be filtered instead of passed through verbatim.
+    _GEMINI_SCHEMA_KEYS = frozenset(
+        {
+            "type",
+            "format",
+            "title",
+            "description",
+            "nullable",
+            "default",
+            "items",
+            "minItems",
+            "maxItems",
+            "enum",
+            "properties",
+            "required",
+            "minProperties",
+            "maxProperties",
+            "minimum",
+            "maximum",
+            "minLength",
+            "maxLength",
+            "pattern",
+            "example",
+            "anyOf",
+            "propertyOrdering",
+        }
+    )
+
+    @classmethod
+    def _gemini_parameters(cls, schema: Any) -> Any:
+        """Drop JSON-Schema keywords Gemini does not support.
+
+        The tool registry emits ``additionalProperties: False`` for strictness
+        on OpenAI-shaped endpoints. Gemini has no such field and refuses the
+        entire request rather than ignoring it, which took every tool call down
+        with a 400 the first time this provider was run for real.
+        """
+        if isinstance(schema, list):
+            return [cls._gemini_parameters(item) for item in schema]
+        if not isinstance(schema, dict):
+            return schema
+        cleaned: dict[str, Any] = {}
+        for key, value in schema.items():
+            if key not in cls._GEMINI_SCHEMA_KEYS:
+                continue
+            if key == "properties" and isinstance(value, dict):
+                cleaned[key] = {
+                    name: cls._gemini_parameters(sub) for name, sub in value.items()
+                }
+            elif key == "items":
+                cleaned[key] = cls._gemini_parameters(value)
+            elif key == "anyOf" and isinstance(value, list):
+                cleaned[key] = [cls._gemini_parameters(sub) for sub in value]
+            else:
+                cleaned[key] = value
+        return cleaned
+
     def complete(self, messages, tools=None) -> LLMResponse:
         system = "\n\n".join(m["content"] for m in messages if m.get("role") == "system")
-        contents = [
-            {"role": "model" if m.get("role") == "assistant" else "user",
-             "parts": [{"text": str(m.get("content", ""))}]}
-            for m in messages
-            if m.get("role") != "system"
-        ]
         kwargs: dict[str, Any] = {
             "model": self.model,
-            "contents": contents,
+            "contents": self._to_contents(messages, self._signatures),
             "config": {
                 "temperature": self.temperature,
                 "max_output_tokens": self.max_tokens,
@@ -418,25 +570,58 @@ class GoogleProvider(_BaseProvider):
         }
         if system:
             kwargs["config"]["system_instruction"] = system
+        if self.thinking_budget is not None:
+            kwargs["config"]["thinking_config"] = {
+                "thinking_budget": int(self.thinking_budget)
+            }
         if tools:
             kwargs["config"]["tools"] = [
                 {
                     "function_declarations": [
                         {
                             "name": t["function"]["name"],
-                            "description": t["function"]["description"],
-                            "parameters": t["function"]["parameters"],
+                            "description": t["function"].get("description") or "",
+                            "parameters": self._gemini_parameters(
+                                t["function"]["parameters"]
+                            ),
                         }
                         for t in tools
                     ]
                 }
             ]
         resp = self.client.models.generate_content(**kwargs)
-        text = getattr(resp, "text", "") or ""
+        text_parts: list[str] = []
         calls: list[ToolCall] = []
-        for fc in getattr(resp, "function_calls", None) or []:
-            calls.append(ToolCall(name=fc.name, arguments=dict(fc.args or {}), call_id=fc.id or ""))
-        return LLMResponse(text=text.strip(), tool_calls=calls, raw=resp)
+        stop_reason: str | None = None
+        for candidate in getattr(resp, "candidates", None) or []:
+            stop_reason = str(getattr(candidate, "finish_reason", "") or "") or stop_reason
+            content = getattr(candidate, "content", None)
+            for part in getattr(content, "parts", None) or []:
+                chunk = getattr(part, "text", None)
+                if chunk:
+                    text_parts.append(str(chunk))
+                call = getattr(part, "function_call", None)
+                if call is not None:
+                    call_id = str(getattr(call, "id", "") or "")
+                    calls.append(
+                        ToolCall(
+                            name=str(getattr(call, "name", "")),
+                            arguments=dict(getattr(call, "args", None) or {}),
+                            call_id=call_id,
+                        )
+                    )
+                    signature = getattr(part, "thought_signature", None)
+                    if signature:
+                        # A call id is unique within a session; use it when the
+                        # model supplies one, otherwise the tool name is the
+                        # best key available in the replayed transcript.
+                        self._signatures[call_id or calls[-1].name] = bytes(signature)
+        return LLMResponse(
+            text=" ".join(text_parts).strip(),
+            tool_calls=calls,
+            raw=resp,
+            stop_reason=stop_reason or None,
+        )
 
 
 class ScriptedProvider(_BaseProvider):
@@ -553,7 +738,14 @@ def build_provider(config) -> _BaseProvider:
     }
     provider_section = section.get(provider_name) or {}
     if isinstance(provider_section, dict):
-        for key in ("api_key_env", "base_url", "api_key_fallback", "fixed_reply", "plan"):
+        for key in (
+            "api_key_env",
+            "base_url",
+            "api_key_fallback",
+            "fixed_reply",
+            "plan",
+            "thinking_budget",
+        ):
             if key in provider_section:
                 kwargs[key] = provider_section[key]
     # Top-level llm.* keys are the override surface for `--set llm.base_url=...`,
@@ -563,4 +755,9 @@ def build_provider(config) -> _BaseProvider:
         kwargs["base_url"] = section["base_url"]
     if section.get("timeout") is not None:
         kwargs["timeout"] = float(section["timeout"])
-    return cls(model=str(section.get("model", "unknown")), **kwargs)
+    model = str(section.get("model") or "").strip()
+    if model in ("", "unknown", "None") and isinstance(provider_section, dict):
+        # Fall back to the provider's own model so llm.google.model is not dead
+        # config when the top-level default belongs to a different provider.
+        model = str(provider_section.get("model") or "unknown").strip()
+    return cls(model=model or "unknown", **kwargs)
