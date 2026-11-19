@@ -45,6 +45,14 @@ from .session import Session
 _MONEY_RE = re.compile(r"\b(\d{1,5})\s*(?:جنيه|EGP|LE|le|pounds?)?\b", re.IGNORECASE)
 _TIME_RE = re.compile(r"\b(\d{1,3})\s*(?:دقيقة|دقايق|minutes?|mins?)\b", re.IGNORECASE)
 
+# ``\d`` in Python matches Unicode decimal digits, so a price spoken as "٣٥٠"
+# is extracted as "٣٥٠" while the tool JSON that sourced it holds "350". Without
+# this map every correct Arabic-numeral price was recorded as an ungrounded
+# number, which is a false alarm on the most common kind of correct reply.
+_DIGITS_TO_ASCII = str.maketrans(
+    "٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹", "01234567890123456789"
+)
+
 
 @dataclass
 class PipelineResult:
@@ -374,11 +382,11 @@ class BaselinePipeline:
 
         for call in tool_calls:
             blob = json.dumps(call.get("result"), ensure_ascii=False, default=str)
-            for m in re.findall(r"\d+", blob):
+            for m in re.findall(r"\d+", blob.translate(_DIGITS_TO_ASCII)):
                 allowed.add(m.lstrip("0") or "0")
                 allowed.add(m)
         if extra_text:
-            for m in re.findall(r"\d+", extra_text):
+            for m in re.findall(r"\d+", extra_text.translate(_DIGITS_TO_ASCII)):
                 allowed.add(m.lstrip("0") or "0")
                 allowed.add(m)
 
@@ -395,7 +403,8 @@ class BaselinePipeline:
         found: list[str] = []
         for pattern in (_MONEY_RE, _TIME_RE):
             for m in pattern.finditer(text or ""):
-                val = m.group(1)
+                # Arabic-Indic digits are the same number; compare in ASCII.
+                val = m.group(1).translate(_DIGITS_TO_ASCII)
                 norm = val.lstrip("0") or "0"
                 if norm not in found:
                     found.append(norm)

@@ -407,6 +407,33 @@ def test_a_number_the_tools_did_return_is_accepted(config, repo):
     assert record.grounding_violations == []
 
 
+def test_arabic_numeral_prices_are_compared_as_the_same_number(config, repo):
+    """A price spoken as ١٦٠ is the number the tool returned as 160."""
+    session = make_session(repo)
+    llm = ScriptedLLM(
+        [
+            order_reply(),
+            LLMResponse(text="تمام، الطلب ١٦٠ جنيه.", tool_calls=[]),
+        ]
+    )
+    pipeline = build_pipeline(config, repo, session, llm)
+    record = pipeline.process_turn(text="عايز برجر", speak=False).turn
+    assert record.grounding_violations == []
+
+
+def test_an_arabic_numeral_price_the_tools_never_returned_is_still_flagged(config, repo):
+    session = make_session(repo)
+    llm = ScriptedLLM(
+        [
+            order_reply(),
+            LLMResponse(text="تمام، الطلب ٩٩٩ جنيه.", tool_calls=[]),
+        ]
+    )
+    pipeline = build_pipeline(config, repo, session, llm)
+    record = pipeline.process_turn(text="عايز برجر", speak=False).turn
+    assert "999" in record.grounding_violations
+
+
 # -- the audio path -------------------------------------------------------
 
 

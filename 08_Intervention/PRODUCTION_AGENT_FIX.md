@@ -116,6 +116,49 @@ concrete clarifying question instead of a generic apology.
 
 ---
 
+## Deployment verification (same day, live)
+
+I set `OPENAI_MODEL` in Vercel Production and redeployed. Two findings from the
+live deployment:
+
+**1. Paid models return `402 Payment Required`.** With `openai/gpt-4.1` live,
+every turn failed and the caller heard the template fallback
+(`_direct_fallback_response`) or the apology line. `vercel logs` shows:
+
+```
+HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "HTTP/1.1 402 Payment Required"
+```
+
+A 402 means the key authenticated but the OpenRouter account has no credit. The
+free model (`nvidia/nemotron-3-ultra-550b-a55b:free`) works on the same key, so
+the account is valid and the gap is money, not configuration. Production is
+therefore on the free model until credits are added.
+
+**2. Live conversation on the free model** (3 turns, one browser session):
+
+| Turn | Caller | First reply | Wall time | Tools |
+|------|--------|-------------|-----------|-------|
+| 1 | "إنتوا بتوصلوا مدينة نصر؟ وفيه إيه برجر؟" | asks/answers with the real menu and prices | 7.4 s | `search_menu` |
+| 2 | "عايز اتنين برجر حلومي" | "اتنين برجر حلومي = ٣٥٠ جنيه… تأكيد الطلب؟" | 7.6 s | `get_price` |
+| 3 | "تمام، أكده" | "تم تسجيل الطلب رقم NB-ORD-0001 … الإجمالي ٣٥٠ جنيه" | 9.1 s | `create_order` |
+
+This is the behaviour that was missing: it leads, it keeps state, it asks for the
+one missing field, and it closes. Latency of 7–9 s per turn is the free model's
+time, not the architecture's — a paid model and a warmer connection would cut it.
+
+**3. New defect found by the live run (defect 9): grounding check compared text,
+not numbers.** Every correct reply that spoke a price in Arabic-Indic digits
+(`٣٥٠`) was recorded as an *ungrounded number*, because `_MONEY_RE` matches
+Unicode digits (`\d` is Unicode-aware) while the allowed set held ASCII digits
+from the tool JSON. Fixed by translating Arabic-Indic and Extended Arabic-Indic
+digits to ASCII on both sides before comparison. This affects the recorded
+metric, not only production: it was inflating `grounding_violations` on the most
+common kind of correct Arabic reply. Tests:
+`test_arabic_numeral_prices_are_compared_as_the_same_number`,
+`test_an_arabic_numeral_price_the_tools_never_returned_is_still_flagged`.
+
+---
+
 ## What this does **not** fix
 
 - **Model choice.** If the deployment runs a weak or free model, it will still
